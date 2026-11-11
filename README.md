@@ -151,6 +151,8 @@ firmware/asistente-escritorio-uc/
     desk_led_controller.h          LEDs con PWM (LEDC) + herramientas MCP
 herramientas/instalar_placa.py     Registra la placa en una copia de xiaozhi-esp32
 pruebas/                           Prueba en PC de las herramientas MCP
+roles/                             Textos de rol para el agente en xiaozhi.me
+musica/                            Música por voz en la PC (YouTube) mediante MCP
 ```
 
 ## 7. Créditos y licencia
