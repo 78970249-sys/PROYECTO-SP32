@@ -1,0 +1,10 @@
+{
+    "type": "asistente-escritorio-uc",
+    "target": "esp32s3",
+    "builds": [
+        {
+            "name": "asistente-escritorio-uc",
+            "sdkconfig_append": []
+        }
+    ]
+}

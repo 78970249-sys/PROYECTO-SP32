@@ -1,0 +1,4 @@
+pruebas/prueba_desk_leds
+pruebas/prueba_desk_leds.exe
+*.o
+__pycache__/
