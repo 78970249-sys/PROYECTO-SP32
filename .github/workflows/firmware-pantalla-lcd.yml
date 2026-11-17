@@ -1,0 +1,58 @@
+# Compila el firmware XiaoZhi para la protoboard con pantalla LCD ST7789 240x240 de 8 pines.
+# Cambio respecto al firmware oficial: la señal SPI de la pantalla baja de 40 MHz a 10 MHz,
+# para que funcione con cables dupont largos en la protoboard.
+#
+# Conexiones de la pantalla: SCL->GPIO21, SDA->GPIO47, RES->GPIO45, DC->GPIO40,
+# CS->GPIO41, BLK->GPIO42, VCC->3V3, GND->GND.
+#
+# Resultado: artefacto "firmware-lcd-240x240-10MHz" con merged-binary.bin.
+# Se graba con ESP Tool en la dirección 0x0.
+
+name: Firmware pantalla LCD 240x240
+
+on:
+  push:
+    branches:
+      - pantalla-lcd-240x240
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compilar bread-compact-wifi-lcd (ST7789 240x240, 10 MHz)
+    runs-on: ubuntu-latest
+    container:
+      image: espressif/idf:release-v6.1
+    steps:
+      - name: Descargar el firmware oficial xiaozhi-esp32 (v2.6.0)
+        uses: actions/checkout@v7
+        with:
+          repository: 78/xiaozhi-esp32
+          ref: aaf1eb7798cabee87a0c6a0649aabf4d17e9e383
+
+      - name: Bajar la velocidad SPI de la pantalla a 10 MHz
+        shell: bash
+        run: |
+          FILE=main/boards/bread-compact-wifi-lcd/compact_wifi_board_lcd.cc
+          sed -i 's/io_config.pclk_hz = 40 \* 1000 \* 1000;/io_config.pclk_hz = 10 * 1000 * 1000;/' "$FILE"
+          grep -n "io_config.pclk_hz = 10 \* 1000 \* 1000;" "$FILE"
+
+      - name: Compilar (español, palabra de activación Hi ESP)
+        shell: bash
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          source "$IDF_PATH/export.sh"
+          python scripts/build.py bread-compact-wifi-lcd \
+            --name bread-compact-wifi-lcd \
+            --language es-ES \
+            --wake-word hiesp \
+            --build-options-json '{"display_model":"LCD_ST7789_240X240"}'
+
+      - name: Subir el firmware
+        uses: actions/upload-artifact@v7
+        with:
+          name: firmware-lcd-240x240-10MHz
+          path: build/merged-binary.bin
+          if-no-files-found: error
