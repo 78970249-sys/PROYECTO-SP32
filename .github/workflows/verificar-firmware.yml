@@ -1,0 +1,39 @@
+# Muestra la huella (MD5), el tamaño y la versión del firmware compilado,
+# para comprobar en ESP Tool ("File md5") que se está grabando el archivo correcto.
+
+name: Verificar firmware pantalla LCD
+
+on:
+  push:
+    branches:
+      - pantalla-lcd-240x240
+    paths:
+      - .github/workflows/verificar-firmware.yml
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el firmware compilado
+        uses: actions/download-artifact@v7
+        with:
+          name: firmware-lcd-240x240-10MHz
+          run-id: 44156132908
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: firmware
+
+      - name: Mostrar MD5, tamaño y versión
+        shell: bash
+        run: |
+          FILE=firmware/merged-binary.bin
+          MD5=$(md5sum "$FILE" | cut -d' ' -f1)
+          SIZE=$(stat -c %s "$FILE")
+          VERSION=$(strings -n 5 "$FILE" | grep -m1 -E '^2\.[0-9]+\.[0-9]+$' || true)
+          BOARD=$(strings -n 5 "$FILE" | grep -m1 -o 'bread-compact-wifi[a-z0-9-]*' || true)
+          echo "::notice title=Firmware correcto::md5=$MD5 bytes=$SIZE version=$VERSION board=$BOARD"
+          echo "md5=$MD5 bytes=$SIZE version=$VERSION board=$BOARD"
