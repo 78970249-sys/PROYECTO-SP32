@@ -4,11 +4,13 @@
 # Cambios respecto al firmware oficial:
 #  - Senal SPI de la pantalla a 20 MHz (el oficial usa 40 MHz) para cables dupont largos.
 #  - Las caritas de caritas/ reemplazan los emojis por defecto.
+#  - Palabra de activacion personalizada "Nexo" con MultiNet7 en ingles (mn7_en),
+#    en lugar del modelo WakeNet "Jarvis". Es experimental: hay que probar su sensibilidad.
 #
 # Conexiones de la pantalla: SCL->GPIO21, SDA->GPIO47, RES->GPIO45, DC->GPIO40,
 # CS->GPIO41, BLK->GPIO42, VCC->3V3, GND->GND.
 #
-# Resultado: lcd-240x240-20mhz-jarvis-caritas.bin (artefacto y rama descarga-firmware).
+# Resultado: lcd-240x240-20mhz-nexo-caritas.bin (artefacto y rama descarga-firmware).
 # Se graba con ESP Tool en la direccion 0x0.
 
 name: Firmware pantalla LCD 240x240
@@ -26,13 +28,13 @@ permissions:
 
 jobs:
   build:
-    name: Compilar bread-compact-wifi-lcd (ST7789 240x240, 20 MHz, caritas)
+    name: Compilar bread-compact-wifi-lcd (ST7789 240x240, 20 MHz, caritas, Nexo)
     runs-on: ubuntu-latest
     container:
       image: espressif/idf:release-v6.1
     env:
       CUSTOM_EMOJI_DIR: ${{ github.workspace }}/proyecto/caritas
-      ARCHIVO: lcd-240x240-20mhz-jarvis-caritas.bin
+      ARCHIVO: lcd-240x240-20mhz-nexo-caritas.bin
     steps:
       - name: Descargar el firmware oficial xiaozhi-esp32 (v2.6.0)
         uses: actions/checkout@v7
@@ -70,7 +72,32 @@ jobs:
           EOF
           grep -n "CUSTOM_EMOJI_DIR" scripts/build_default_assets.py
 
-      - name: Compilar (español, palabra de activación Jarvis)
+      - name: Palabra de activación personalizada "Nexo" (MultiNet7 en inglés)
+        shell: bash
+        run: |
+          python3 - <<'EOF'
+          p = "scripts/build.py"
+          s = open(p, encoding="utf-8").read()
+          viejo = '    normalized = wake_word.strip().casefold().replace("-", "_")\n'
+          nuevo = viejo + (
+              '    if normalized == "nexo":\n'
+              '        return "nexo", [\n'
+              '            "CONFIG_WAKE_WORD_DISABLED=n",\n'
+              '            "CONFIG_USE_ESP_WAKE_WORD=n",\n'
+              '            "CONFIG_USE_AFE_WAKE_WORD=n",\n'
+              '            "CONFIG_USE_CUSTOM_WAKE_WORD=y",\n'
+              "            'CONFIG_CUSTOM_WAKE_WORD=\"nexo\"',\n"
+              "            'CONFIG_CUSTOM_WAKE_WORD_DISPLAY=\"Nexo\"',\n"
+              '            "CONFIG_CUSTOM_WAKE_WORD_THRESHOLD=20",\n'
+              '            "CONFIG_SR_MN_EN_MULTINET7_QUANT=y",\n'
+              '        ], ["CONFIG_USE_CUSTOM_WAKE_WORD", "CONFIG_SR_MN_EN_MULTINET7_QUANT"]\n'
+          )
+          assert s.count(viejo) == 1
+          open(p, "w", encoding="utf-8").write(s.replace(viejo, nuevo))
+          EOF
+          grep -n -A12 'if normalized == "nexo"' scripts/build.py
+
+      - name: Compilar (español, palabra de activación Nexo)
         shell: bash
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -78,7 +105,7 @@ jobs:
           python scripts/build.py bread-compact-wifi-lcd \
             --name bread-compact-wifi-lcd \
             --language es-ES \
-            --wake-word wn9_jarvis_tts \
+            --wake-word nexo \
             --build-options-json '{"display_model":"LCD_ST7789_240X240"}'
 
       - name: Comprobar que las caritas quedaron dentro y mostrar MD5
@@ -89,7 +116,11 @@ jobs:
           faltan = [n for n in ("neutral.gif", "happy.gif", "loving.gif", "confused.gif") if n.encode() not in datos]
           assert not faltan, f"faltan caritas: {faltan}"
           print("caritas dentro del firmware: OK")
+          assert b"mn7_en" in datos, "falta el modelo MultiNet7 en ingles"
+          assert b'"nexo"' in datos, "falta el comando nexo en index.json"
+          print("palabra de activacion Nexo (mn7_en) dentro del firmware: OK")
           EOF
+          grep -E "CONFIG_USE_CUSTOM_WAKE_WORD|CONFIG_CUSTOM_WAKE_WORD|CONFIG_SR_MN_EN|CONFIG_USE_AFE_WAKE_WORD" sdkconfig
           cp build/merged-binary.bin "$ARCHIVO"
           MD5=$(md5sum "$ARCHIVO" | cut -d' ' -f1)
           SIZE=$(stat -c %s "$ARCHIVO")
@@ -98,7 +129,7 @@ jobs:
       - name: Subir el firmware (artefacto)
         uses: actions/upload-artifact@v7
         with:
-          name: lcd-240x240-20mhz-jarvis-caritas
+          name: lcd-240x240-20mhz-nexo-caritas
           path: ${{ env.ARCHIVO }}
           if-no-files-found: error
 
@@ -113,5 +144,5 @@ jobs:
           cp "../$ARCHIVO" firmware/
           git add "firmware/$ARCHIVO"
           git -c user.name="github-actions[bot]" -c user.email="41898283+github-actions[bot]@users.noreply.github.com" \
-            commit -m "Firmware LCD 240x240 20 MHz Jarvis con caritas"
+            commit -m "Firmware LCD 240x240 20 MHz Nexo con caritas"
           git push origin descarga-firmware
