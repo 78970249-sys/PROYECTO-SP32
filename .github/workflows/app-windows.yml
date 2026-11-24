@@ -51,6 +51,29 @@ jobs:
           Get-Content "$env:TEMP\kusivox_autoprueba.txt"
           if ($p.ExitCode -ne 0) { throw "La autoprueba de la ventana fallo" }
 
+      - name: Captura de la ventana (para el informe)
+        continue-on-error: true
+        run: |
+          $p = Start-Process -FilePath dist\KusiVox.exe -PassThru
+          Start-Sleep -Seconds 8
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+          $g = [System.Drawing.Graphics]::FromImage($bmp)
+          $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+          $bmp.Save("$env:RUNNER_TEMP\kusivox_ventana.png", [System.Drawing.Imaging.ImageFormat]::Png)
+          Stop-Process -Id $p.Id -Force
+          $w = "$env:RUNNER_TEMP\capturas"
+          git worktree add --detach $w
+          Push-Location $w
+          git checkout --orphan capturas
+          git rm -rf -q .
+          Copy-Item "$env:RUNNER_TEMP\kusivox_ventana.png" .
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" add kusivox_ventana.png
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" commit -q -m "Captura de la ventana de KusiVox en Windows"
+          git push -f -q origin capturas
+          Pop-Location
+
       - name: Instalador (Inno Setup)
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
