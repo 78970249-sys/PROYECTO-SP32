@@ -39,7 +39,7 @@ jobs:
       - name: Compilar los ejecutables
         run: |
           pyinstaller --noconfirm --clean --onefile --windowed --name KusiVox --icon kusivox.ico --add-data "kusivox.ico;." kusivox_app.py
-          pyinstaller --noconfirm --onefile --console --name KusiVoxServidor --icon kusivox.ico --collect-all mcp kusivox_servidor.py
+          pyinstaller --noconfirm --onefile --console --name KusiVoxServidor --icon kusivox.ico --collect-submodules mcp.server --collect-submodules mcp.shared --collect-submodules mcp.types --collect-submodules mcp.os --exclude-module mcp.cli --copy-metadata mcp kusivox_servidor.py
           Get-ChildItem dist
 
       - name: Probar el servidor (20 herramientas por MCP)
