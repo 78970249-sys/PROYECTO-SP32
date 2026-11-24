@@ -4,13 +4,14 @@
 # Cambios respecto al firmware oficial:
 #  - Senal SPI de la pantalla a 20 MHz (el oficial usa 40 MHz) para cables dupont largos.
 #  - Las caritas de caritas/ reemplazan los emojis por defecto.
-#  - Palabra de activacion personalizada "Nexo" con MultiNet7 en ingles (mn7_en),
-#    en lugar del modelo WakeNet "Jarvis". Es experimental: hay que probar su sensibilidad.
+#  - Producto KusiVox: palabra de activacion personalizada "kusi vox" con MultiNet7
+#    en ingles (mn7_en), red de configuracion "KusiVox-XXXX" e indicador de bateria
+#    (18650: divisor 100k/100k en GPIO 1; USB conectado por divisor en GPIO 2).
 #
 # Conexiones de la pantalla: SCL->GPIO21, SDA->GPIO47, RES->GPIO45, DC->GPIO40,
 # CS->GPIO41, BLK->GPIO42, VCC->3V3, GND->GND.
 #
-# Resultado: lcd-240x240-20mhz-nexo-caritas.bin (artefacto y rama descarga-firmware).
+# Resultado: kusivox-lcd-240x240-20mhz-bateria.bin (artefacto y rama descarga-firmware).
 # Se graba con ESP Tool en la direccion 0x0.
 
 name: Firmware pantalla LCD 240x240
@@ -28,13 +29,13 @@ permissions:
 
 jobs:
   build:
-    name: Compilar bread-compact-wifi-lcd (ST7789 240x240, 20 MHz, caritas, Nexo)
+    name: Compilar KusiVox (ST7789 240x240, 20 MHz, caritas, bateria)
     runs-on: ubuntu-latest
     container:
       image: espressif/idf:release-v6.1
     env:
       CUSTOM_EMOJI_DIR: ${{ github.workspace }}/proyecto/caritas
-      ARCHIVO: lcd-240x240-20mhz-nexo-caritas.bin
+      ARCHIVO: kusivox-lcd-240x240-20mhz-bateria.bin
     steps:
       - name: Descargar el firmware oficial xiaozhi-esp32 (v2.6.0)
         uses: actions/checkout@v7
@@ -72,7 +73,7 @@ jobs:
           EOF
           grep -n "CUSTOM_EMOJI_DIR" scripts/build_default_assets.py
 
-      - name: Palabra de activación personalizada "Nexo" (MultiNet7 en inglés)
+      - name: Palabra de activación personalizada "KusiVox" (MultiNet7 en inglés)
         shell: bash
         run: |
           python3 - <<'EOF'
@@ -80,14 +81,14 @@ jobs:
           s = open(p, encoding="utf-8").read()
           viejo = '    normalized = wake_word.strip().casefold().replace("-", "_")\n'
           nuevo = viejo + (
-              '    if normalized == "nexo":\n'
-              '        return "nexo", [\n'
+              '    if normalized == "kusivox":\n'
+              '        return "kusivox", [\n'
               '            "CONFIG_WAKE_WORD_DISABLED=n",\n'
               '            "CONFIG_USE_ESP_WAKE_WORD=n",\n'
               '            "CONFIG_USE_AFE_WAKE_WORD=n",\n'
               '            "CONFIG_USE_CUSTOM_WAKE_WORD=y",\n'
-              "            'CONFIG_CUSTOM_WAKE_WORD=\"nexo\"',\n"
-              "            'CONFIG_CUSTOM_WAKE_WORD_DISPLAY=\"Nexo\"',\n"
+              "            'CONFIG_CUSTOM_WAKE_WORD=\"kusi vox\"',\n"
+              "            'CONFIG_CUSTOM_WAKE_WORD_DISPLAY=\"KusiVox\"',\n"
               '            "CONFIG_CUSTOM_WAKE_WORD_THRESHOLD=20",\n'
               '            "CONFIG_SR_MN_EN_MULTINET7_QUANT=y",\n'
               '        ], ["CONFIG_USE_CUSTOM_WAKE_WORD", "CONFIG_SR_MN_EN_MULTINET7_QUANT"]\n'
@@ -95,9 +96,43 @@ jobs:
           assert s.count(viejo) == 1
           open(p, "w", encoding="utf-8").write(s.replace(viejo, nuevo))
           EOF
-          grep -n -A12 'if normalized == "nexo"' scripts/build.py
+          grep -n -A12 'if normalized == "kusivox"' scripts/build.py
 
-      - name: Compilar (español, palabra de activación Nexo)
+      - name: Indicador de batería y red "KusiVox-XXXX"
+        shell: bash
+        run: |
+          python3 - <<'EOF'
+          p = "main/boards/bread-compact-wifi-lcd/compact_wifi_board_lcd.cc"
+          s = open(p, encoding="utf-8").read()
+          cambios = [
+              ('#include "led/single_led.h"\n', '#include "led/single_led.h"\n#include "adc_battery_monitor.h"\n'),
+              ("    LcdDisplay* display_;\n", "    LcdDisplay* display_;\n    AdcBatteryMonitor* adc_battery_monitor_ = nullptr;\n"),
+              ("        InitializeButtons();\n",
+               "        InitializeButtons();\n"
+               "        // Bateria 18650: divisor 100k/100k en GPIO 1 (ADC1_CH0); USB conectado en GPIO 2\n"
+               "        adc_battery_monitor_ = new AdcBatteryMonitor(ADC_UNIT_1, ADC_CHANNEL_0, 100000, 100000, GPIO_NUM_2);\n"),
+              ("    virtual Display* GetDisplay() override {\n",
+               "    virtual bool GetBatteryLevel(int &level, bool& charging, bool& discharging) override {\n"
+               "        charging = adc_battery_monitor_->IsCharging();\n"
+               "        discharging = adc_battery_monitor_->IsDischarging();\n"
+               "        level = adc_battery_monitor_->GetBatteryLevel();\n"
+               "        return true;\n"
+               "    }\n\n"
+               "    virtual Display* GetDisplay() override {\n"),
+          ]
+          for viejo, nuevo in cambios:
+              assert s.count(viejo) == 1, viejo
+              s = s.replace(viejo, nuevo)
+          open(p, "w", encoding="utf-8").write(s)
+          p = "main/boards/common/wifi_board.cc"
+          s = open(p, encoding="utf-8").read()
+          assert s.count('config.ssid_prefix = "Xiaozhi";') == 1
+          open(p, "w", encoding="utf-8").write(s.replace('config.ssid_prefix = "Xiaozhi";', 'config.ssid_prefix = "KusiVox";'))
+          EOF
+          grep -n "adc_battery_monitor_\|AdcBatteryMonitor" main/boards/bread-compact-wifi-lcd/compact_wifi_board_lcd.cc
+          grep -n "ssid_prefix =" main/boards/common/wifi_board.cc
+
+      - name: Compilar (español, palabra de activación KusiVox)
         shell: bash
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -105,7 +140,7 @@ jobs:
           python scripts/build.py bread-compact-wifi-lcd \
             --name bread-compact-wifi-lcd \
             --language es-ES \
-            --wake-word nexo \
+            --wake-word kusivox \
             --build-options-json '{"display_model":"LCD_ST7789_240X240"}'
 
       - name: Comprobar que las caritas quedaron dentro y mostrar MD5
@@ -117,8 +152,9 @@ jobs:
           assert not faltan, f"faltan caritas: {faltan}"
           print("caritas dentro del firmware: OK")
           assert b"mn7_en" in datos, "falta el modelo MultiNet7 en ingles"
-          assert b'"nexo"' in datos, "falta el comando nexo en index.json"
-          print("palabra de activacion Nexo (mn7_en) dentro del firmware: OK")
+          assert b'"kusi vox"' in datos, "falta el comando kusi vox en index.json"
+          assert b"KusiVox" in datos, "falta el nombre KusiVox"
+          print("palabra de activacion KusiVox (mn7_en) dentro del firmware: OK")
           EOF
           grep -E "CONFIG_USE_CUSTOM_WAKE_WORD|CONFIG_CUSTOM_WAKE_WORD|CONFIG_SR_MN_EN|CONFIG_USE_AFE_WAKE_WORD" sdkconfig
           cp build/merged-binary.bin "$ARCHIVO"
@@ -129,7 +165,7 @@ jobs:
       - name: Subir el firmware (artefacto)
         uses: actions/upload-artifact@v7
         with:
-          name: lcd-240x240-20mhz-nexo-caritas
+          name: kusivox-lcd-240x240-20mhz-bateria
           path: ${{ env.ARCHIVO }}
           if-no-files-found: error
 
@@ -144,5 +180,5 @@ jobs:
           cp "../$ARCHIVO" firmware/
           git add "firmware/$ARCHIVO"
           git -c user.name="github-actions[bot]" -c user.email="41898283+github-actions[bot]@users.noreply.github.com" \
-            commit -m "Firmware LCD 240x240 20 MHz Nexo con caritas"
+            commit -m "Firmware KusiVox LCD 240x240 20 MHz con bateria"
           git push origin descarga-firmware
