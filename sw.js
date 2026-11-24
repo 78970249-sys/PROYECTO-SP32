@@ -1,5 +1,5 @@
 // Guarda la app para que funcione sin internet (útil al configurar el Wi-Fi de KusiVox).
-const CACHE = "kusivox-v2";
+const CACHE = "kusivox-v3";
 const ARCHIVOS = ["./", "index.html", "manifest.webmanifest", "img/icon-192.png", "img/icon-512.png",
   "img/maskable-512.png", "img/apple-touch-icon.png", "img/neutral.png", "img/happy.png", "img/winking.png",
   "img/thinking.png", "img/sleepy.png"];
