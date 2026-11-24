@@ -1,0 +1,80 @@
+# Compila la app KusiVox para Windows (KusiVox.exe + KusiVoxServidor.exe), la prueba,
+# arma el instalador con Inno Setup y publica todo en una version (release) de GitHub.
+name: App KusiVox para Windows
+
+on:
+  push:
+    branches:
+      - kusivox-apps
+    paths:
+      - app-windows/**
+      - .github/workflows/app-windows.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Compilar, probar y publicar
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: app-windows
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Compilar los ejecutables
+        run: |
+          pyinstaller --noconfirm --clean --onefile --windowed --name KusiVox --icon kusivox.ico --add-data "kusivox.ico;." kusivox_app.py
+          pyinstaller --noconfirm --onefile --console --name KusiVoxServidor --icon kusivox.ico --collect-all mcp kusivox_servidor.py
+          Get-ChildItem dist
+
+      - name: Probar el servidor (20 herramientas por MCP)
+        run: python prueba_servidor.py dist\KusiVoxServidor.exe
+
+      - name: Probar la ventana y el cifrado
+        run: |
+          $p = Start-Process -FilePath dist\KusiVox.exe -ArgumentList '--autoprueba' -PassThru -Wait
+          Get-Content "$env:TEMP\kusivox_autoprueba.txt"
+          if ($p.ExitCode -ne 0) { throw "La autoprueba de la ventana fallo" }
+
+      - name: Instalador (Inno Setup)
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+          & $iscc kusivox.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup fallo" }
+          Compress-Archive -Path dist\KusiVox.exe, dist\KusiVoxServidor.exe -DestinationPath Output\KusiVox-Portable.zip
+
+      - name: Agregar el firmware de KusiVox (si ya esta compilado)
+        run: |
+          git fetch origin descarga-firmware
+          cmd /c "git show origin/descarga-firmware:firmware/kusivox-lcd-240x240-20mhz-bateria.bin > Output\kusivox-lcd-240x240-20mhz-bateria.bin"
+          if ((Get-Item Output\kusivox-lcd-240x240-20mhz-bateria.bin).Length -lt 1000000) { Remove-Item Output\kusivox-lcd-240x240-20mhz-bateria.bin; "Firmware aun no disponible" }
+          Get-FileHash Output\* -Algorithm SHA256 | Format-Table Hash, Path -AutoSize | Out-String -Width 220
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kusivox-windows
+          path: app-windows/Output/*
+
+      - name: Publicar la version KusiVox 1.0.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete kusivox-v1.0.0 --yes --cleanup-tag 2>$null
+          $global:LASTEXITCODE = 0
+          gh release create kusivox-v1.0.0 (Get-ChildItem Output\*).FullName --title "KusiVox 1.0.0" --notes-file NOTAS.md --target $env:GITHUB_SHA

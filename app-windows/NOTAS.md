@@ -1,0 +1,20 @@
+## KusiVox 1.0.0
+
+Asistente de voz KusiVox: app de Windows y firmware del dispositivo.
+
+**Descargas**
+
+- `KusiVox-Setup.exe`: instalador para Windows 10 y 11 (64 bits). No necesita Python ni permisos de administrador.
+- `KusiVox-Portable.zip`: la misma app sin instalar (descomprimir y abrir `KusiVox.exe`).
+- `kusivox-lcd-240x240-20mhz-bateria.bin`: firmware del dispositivo (grabar con ESP Tool en la dirección 0x0).
+
+**Primer uso**
+
+1. Instala y abre KusiVox.
+2. En xiaozhi.me abre tu agente → Configurar → Extensiones y copia el MCP endpoint (`wss://…?token=…`).
+3. Pega el endpoint en KusiVox y pulsa **Guardar y conectar**. El estado debe decir *Conectado*.
+4. Di "KusiVox" al dispositivo y pide, por ejemplo, "abre la calculadora".
+
+Windows puede mostrar "Windows protegió su PC" porque la app no tiene firma digital: pulsa **Más información → Ejecutar de todas formas**.
+
+App para el celular: https://78970249-sys.github.io/PROYECTO-SP32/
