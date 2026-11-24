@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KusiVox</title>
+<meta name="description" content="App de KusiVox: configura tu asistente de voz, consulta los comandos y descarga la app para Windows.">
+<meta name="theme-color" content="#0E1726">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="img/icon-192.png">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="KusiVox">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  :root {
+    --fondo: #0E1726; --panel: #16223A; --panel2: #1E2D4A; --texto: #FFFFFF; --suave: #AEB8C8;
+    --acento: #1A93CF; --rosa: #FF6E9C; --verde: #2A9D6B; --ambar: #E9A23B; --borde: #2A3B5C;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--fondo); color: var(--texto); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  a { color: var(--acento); }
+  header { display: flex; align-items: center; gap: 12px; padding: calc(14px + env(safe-area-inset-top)) 18px 10px; }
+  header img { width: 44px; height: 44px; border-radius: 12px; background: #000; }
+  header h1 { margin: 0; font-size: 22px; letter-spacing: .2px; }
+  header p { margin: 0; color: var(--suave); font-size: 13px; }
+  main { max-width: 680px; margin: 0 auto; padding: 4px 16px 24px; }
+  section { display: none; }
+  section.activa { display: block; animation: aparecer .18s ease-out; }
+  @keyframes aparecer { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  h2 { font-size: 20px; margin: 14px 0 6px; }
+  h3 { font-size: 16px; margin: 0 0 4px; }
+  .sub { color: var(--suave); margin: 0 0 14px; }
+  .tarjeta { background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 16px; margin: 12px 0; }
+  .hero { display: flex; gap: 16px; align-items: center; }
+  .pantalla { width: 112px; height: 112px; border-radius: 22px; background: #000; border: 3px solid var(--acento); flex: none; overflow: hidden; }
+  .pantalla img { width: 100%; height: 100%; display: block; }
+  .hero h2 { margin-top: 0; }
+  .pasos { counter-reset: paso; list-style: none; padding: 0; margin: 0; }
+  .pasos li { counter-increment: paso; position: relative; padding: 2px 0 14px 44px; }
+  .pasos li::before { content: counter(paso); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--acento); color: #fff; font-weight: 700; display: grid; place-items: center; font-size: 15px; }
+  .pasos li:last-child { padding-bottom: 0; }
+  .pasos p { margin: 2px 0 0; color: var(--suave); font-size: 15px; }
+  .boton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 18px; border-radius: 12px;
+    background: var(--acento); color: #fff; font-weight: 700; text-decoration: none; border: 0; font-size: 16px; cursor: pointer; width: 100%; margin-top: 10px; }
+  .boton.secundario { background: var(--panel2); border: 1px solid var(--borde); }
+  .nota { font-size: 14px; color: var(--suave); }
+  .aviso { border-left: 0; background: rgba(233,162,59,.12); border-color: rgba(233,162,59,.4); }
+  .chip { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--panel2); color: var(--suave); margin-left: 6px; vertical-align: middle; }
+  input[type=search] { width: 100%; min-height: 48px; border-radius: 12px; border: 1px solid var(--borde); background: var(--panel); color: var(--texto);
+    padding: 0 14px; font-size: 16px; }
+  .grupo h3 { display: flex; align-items: center; gap: 8px; }
+  .comando { padding: 10px 0; border-top: 1px solid var(--borde); }
+  .comando:first-of-type { border-top: 0; }
+  .comando b { display: block; }
+  .comando span { color: var(--suave); font-size: 14px; }
+  .dato { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dato div { background: var(--panel2); border-radius: 12px; padding: 12px; }
+  .dato strong { display: block; font-size: 22px; color: var(--acento); }
+  .dato small { color: var(--suave); }
+  details { background: var(--panel); border: 1px solid var(--borde); border-radius: 14px; padding: 0 16px; margin: 10px 0; }
+  summary { cursor: pointer; padding: 14px 0; font-weight: 700; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; float: right; color: var(--suave); }
+  details[open] summary::after { content: "–"; }
+  details p { margin: 0 0 14px; color: var(--suave); }
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr); background: #0B1220;
+    border-top: 1px solid var(--borde); padding-bottom: env(safe-area-inset-bottom); }
+  nav a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 10px; color: var(--suave); text-decoration: none; font-size: 12px; }
+  nav a svg { width: 24px; height: 24px; }
+  nav a.activa { color: var(--texto); }
+  nav a.activa svg { color: var(--acento); }
+  #instalar { display: none; }
+  footer { text-align: center; color: var(--suave); font-size: 13px; padding: 10px 0 0; }
+</style>
+</head>
+<body>
+<header>
+  <img src="img/happy.png" alt="">
+  <div><h1>KusiVox</h1><p>Tu asistente de voz</p></div>
+</header>
+
+<main>
+  <!-- INICIO -->
+  <section id="inicio" class="activa">
+    <div class="tarjeta hero">
+      <div class="pantalla"><img id="cara" src="img/neutral.png" alt="Carita de KusiVox"></div>
+      <div>
+        <h2>Di “KusiVox” y habla</h2>
+        <p class="nota">KusiVox conversa en español, muestra sus emociones en la pantalla y puede manejar tu computadora con Windows.</p>
+      </div>
+    </div>
+    <button class="boton" id="instalar">Instalar la app en este celular</button>
+    <p class="nota" id="ayuda-ios" hidden>En iPhone: toca <b>Compartir</b> y luego <b>Agregar a pantalla de inicio</b>.</p>
+
+    <h2>Primeros pasos</h2>
+    <div class="tarjeta">
+      <ol class="pasos">
+        <li><h3>Carga la batería</h3><p>Conecta un cargador USB-C de 5 V. La luz roja indica que está cargando.</p></li>
+        <li><h3>Enciende KusiVox</h3><p>Usa el interruptor. En la pantalla aparece su carita.</p></li>
+        <li><h3>Conéctalo al Wi-Fi</h3><p>Solo la primera vez. Mira la pestaña <a href="#configurar">Configurar</a>.</p></li>
+        <li><h3>Actívalo en xiaozhi.me</h3><p>Ingresa el código de 6 dígitos que dice KusiVox.</p></li>
+        <li><h3>Instala KusiVox en tu PC</h3><p>Para manejar la computadora con la voz. Mira la pestaña <a href="#pc">PC</a>.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- CONFIGURAR -->
+  <section id="configurar">
+    <h2>Conectar al Wi-Fi</h2>
+    <p class="sub">Se hace una sola vez, o cuando cambies de red.</p>
+    <div class="tarjeta">
+      <ol class="pasos">
+        <li><h3>Enciende KusiVox</h3><p>Si no tiene una red guardada, entra en modo de configuración y crea una red llamada <b>KusiVox-XXXX</b>.</p></li>
+        <li><h3>Conecta este celular a esa red</h3><p>Abre los ajustes de Wi-Fi del celular y elige <b>KusiVox-XXXX</b>.</p></li>
+        <li><h3>Abre la página de configuración</h3><p>Toca el botón, elige tu red de casa y escribe su contraseña.</p></li>
+      </ol>
+      <a class="boton" href="http://192.168.4.1" target="_blank" rel="noopener">Abrir configuración (192.168.4.1)</a>
+    </div>
+    <div class="tarjeta aviso">
+      <h3>Usa una red de 2,4 GHz</h3>
+      <p class="nota">KusiVox no se conecta a redes de 5 GHz. Si tu router tiene dos redes, elige la que no dice “5G”.</p>
+    </div>
+    <h2>Activar en xiaozhi.me</h2>
+    <div class="tarjeta">
+      <ol class="pasos">
+        <li><h3>Escucha el código</h3><p>Al conectarse por primera vez, KusiVox dice y muestra un código de 6 dígitos.</p></li>
+        <li><h3>Agrega el dispositivo</h3><p>En xiaozhi.me entra a tu agente, elige agregar dispositivo e ingresa el código.</p></li>
+      </ol>
+      <a class="boton secundario" href="https://xiaozhi.me" target="_blank" rel="noopener">Abrir xiaozhi.me</a>
+    </div>
+  </section>
+
+  <!-- COMANDOS -->
+  <section id="comandos">
+    <h2>Qué le puedes decir</h2>
+    <p class="sub">Primero di “KusiVox” y espera a que te escuche.</p>
+    <input type="search" id="buscar" placeholder="Buscar un comando…" aria-label="Buscar un comando">
+    <div id="lista"></div>
+  </section>
+
+  <!-- PC -->
+  <section id="pc">
+    <h2>KusiVox para Windows</h2>
+    <p class="sub">Con esta app, KusiVox puede abrir programas, poner música, escribir y más en tu computadora.</p>
+    <div class="tarjeta">
+      <h3>Descargar <span class="chip">Windows 10 y 11 · 64 bits</span></h3>
+      <a class="boton" href="https://github.com/78970249-sys/PROYECTO-SP32/releases/latest/download/KusiVox-Setup.exe">Descargar el instalador</a>
+      <a class="boton secundario" href="https://github.com/78970249-sys/PROYECTO-SP32/releases/latest/download/KusiVox-Portable.zip">Versión portable (.zip)</a>
+      <p class="nota">Si Windows muestra “Windows protegió su PC”, toca <b>Más información</b> y luego <b>Ejecutar de todas formas</b>.</p>
+    </div>
+    <div class="tarjeta">
+      <ol class="pasos">
+        <li><h3>Copia tu MCP endpoint</h3><p>En xiaozhi.me: tu agente → Configurar → Extensiones. Empieza con <b>wss://</b>.</p></li>
+        <li><h3>Pégalo en KusiVox</h3><p>Abre la app en la PC, pulsa <b>Pegar</b> y luego <b>Guardar y conectar</b>.</p></li>
+        <li><h3>Listo</h3><p>Cuando diga <b>Conectado</b>, prueba: “KusiVox, abre la calculadora”.</p></li>
+      </ol>
+    </div>
+    <div class="tarjeta aviso">
+      <h3>Tu MCP endpoint es privado</h3>
+      <p class="nota">Funciona como una contraseña: no lo compartas ni lo publiques. La app lo guarda cifrado con tu cuenta de Windows.</p>
+    </div>
+  </section>
+
+  <!-- BATERÍA -->
+  <section id="bateria">
+    <h2>Batería y carga</h2>
+    <p class="sub">KusiVox funciona sin cables con una batería 18650 recargable.</p>
+    <div class="tarjeta dato">
+      <div><strong>USB-C</strong><small>Carga con 5 V</small></div>
+      <div><strong>≈ 8 h</strong><small>Uso mixto estimado</small></div>
+      <div><strong>18650</strong><small>3,7 V con protección</small></div>
+      <div><strong>En pantalla</strong><small>Indicador de nivel</small></div>
+    </div>
+    <div class="tarjeta">
+      <h3>Luces del cargador</h3>
+      <p class="nota"><b>Roja:</b> cargando. <b>Azul o verde:</b> carga completa. Mientras carga, la pantalla muestra el símbolo de carga.</p>
+    </div>
+    <div class="tarjeta aviso">
+      <h3>Cuidados</h3>
+      <p class="nota">Usa una batería 18650 original con protección. No cubras KusiVox mientras carga, no lo dejes al sol y no uses baterías golpeadas o hinchadas.</p>
+    </div>
+  </section>
+
+  <!-- AYUDA -->
+  <section id="ayuda">
+    <h2>Ayuda</h2>
+    <details><summary>KusiVox no me escucha</summary><p>Revisa que no esté en modo de configuración Wi-Fi (sin red guardada). Habla claro a unos 30 a 50 cm. También puedes mantener presionado el botón BOOT para hablarle sin decir “KusiVox”.</p></details>
+    <details><summary>No se conecta al Wi-Fi</summary><p>Usa una red de 2,4 GHz y revisa la contraseña. Si cambiaste de casa, vuelve a la pestaña Configurar.</p></details>
+    <details><summary>La computadora no obedece</summary><p>Abre KusiVox en la PC y revisa que diga “Conectado”. Si dice “Reconectando”, revisa el internet de la PC o vuelve a pegar el MCP endpoint.</p></details>
+    <details><summary>Dice que no puede abrir programas</summary><p>Revisa el rol del agente en xiaozhi.me: debe indicar que use las herramientas de la PC. Luego empieza una conversación nueva.</p></details>
+    <details><summary>La pantalla se ve gris</summary><p>Suele ser el cableado: revisa CS (GPIO 41) y SCL (GPIO 21).</p></details>
+    <details><summary>La batería dura poco</summary><p>Baja el brillo de la pantalla y revisa que la batería sea original. Una 18650 de buena calidad tiene entre 2500 y 3500 mAh.</p></details>
+    <footer>
+      <p>KusiVox 1.0 · Proyecto de Arquitectura del Computador<br>Universidad Continental · Cusco</p>
+    </footer>
+  </section>
+</main>
+
+<nav aria-label="Secciones">
+  <a href="#inicio" class="activa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Inicio</a>
+  <a href="#configurar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a15 15 0 0 1 20 0"/><circle cx="12" cy="19.5" r="1"/></svg>Wi-Fi</a>
+  <a href="#comandos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Comandos</a>
+  <a href="#pc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>PC</a>
+  <a href="#ayuda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5v.01"/></svg>Ayuda</a>
+</nav>
+
+<script>
+  // Comandos de voz agrupados (coinciden con las 20 herramientas de la app de Windows)
+  const GRUPOS = [
+    ["Conversación", [["¿Qué hora es?", "Responde con la hora y la fecha"], ["Cuéntame un chiste", "Conversa contigo en español"], ["¿Qué es un microcontrolador?", "Responde preguntas generales"]]],
+    ["Aplicaciones", [["Abre la calculadora", "Abre cualquier programa instalado"], ["¿Qué programas tengo?", "Lista las aplicaciones"], ["Cierra el Bloc de notas", "Cierra un programa abierto"]]],
+    ["Música y videos", [["Pon música de Grupo 5", "Reproduce en YouTube"], ["Pausa / continúa", "Controla la reproducción"], ["Siguiente canción", "Pasa a la siguiente"], ["Volumen al 40", "Fija el volumen en un número"]]],
+    ["Internet", [["Abre youtube.com", "Abre una página en Chrome"], ["Busca el clima de Cusco", "Busca en Google"], ["Busca en YouTube recetas", "Muestra resultados de YouTube"]]],
+    ["Escribir y ventanas", [["Escribe hola mundo", "Dicta texto en la ventana activa"], ["Cambia a Chrome", "Pasa a otra ventana"], ["Cierra esta ventana", "Cierra la ventana activa"], ["Nueva pestaña", "Usa atajos de teclado"]]],
+    ["Archivos", [["Abre Descargas", "Abre una carpeta"], ["Toma una captura", "Guarda una captura de pantalla"]]],
+    ["Sistema", [["Bloquea la PC", "Bloquea la sesión al instante"], ["Apaga la PC", "Pide confirmación y espera 30 s"], ["Cancela el apagado", "Detiene un apagado o reinicio"], ["Brillo al 70", "Cambia el brillo de la pantalla"], ["¿Cuánta batería tiene la PC?", "Batería, memoria y disco"], ["Abre la configuración de Wi-Fi", "Abre la configuración de Windows"]]],
+  ];
+  const lista = document.getElementById("lista");
+  function pintar(filtro = "") {
+    const f = filtro.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    const limpiar = (t) => t.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    lista.innerHTML = "";
+    for (const [grupo, items] of GRUPOS) {
+      const visibles = items.filter(([c, d]) => !f || limpiar(c + " " + d + " " + grupo).includes(f));
+      if (!visibles.length) continue;
+      const t = document.createElement("div");
+      t.className = "tarjeta grupo";
+      t.innerHTML = `<h3>${grupo}<span class="chip">${visibles.length}</span></h3>` +
+        visibles.map(([c, d]) => `<div class="comando"><b>“KusiVox, ${c.replace(/^([¿¡]?)(\p{L})/u, (_, a, b) => a + b.toLowerCase())}”</b><span>${d}</span></div>`).join("");
+      lista.appendChild(t);
+    }
+    if (!lista.children.length) lista.innerHTML = '<p class="nota">No encontré ese comando. Igual puedes pedírselo con tus palabras.</p>';
+  }
+  document.getElementById("buscar").addEventListener("input", (e) => pintar(e.target.value));
+  pintar();
+
+  // Navegación por pestañas
+  function mostrar() {
+    const id = (location.hash || "#inicio").slice(1);
+    const destino = document.getElementById(id) ? id : "inicio";
+    document.querySelectorAll("section").forEach((s) => s.classList.toggle("activa", s.id === destino));
+    document.querySelectorAll("nav a").forEach((a) => a.classList.toggle("activa", a.getAttribute("href") === "#" + destino));
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener("hashchange", mostrar);
+  mostrar();
+
+  // Carita que cambia de emoción
+  const caras = ["neutral", "happy", "winking", "thinking", "happy"];
+  let i = 0;
+  setInterval(() => { i = (i + 1) % caras.length; document.getElementById("cara").src = `img/${caras[i]}.png`; }, 2500);
+
+  // Instalación como app
+  let aviso = null;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault(); aviso = e; document.getElementById("instalar").style.display = "flex";
+  });
+  document.getElementById("instalar").addEventListener("click", async () => {
+    if (!aviso) return; aviso.prompt(); await aviso.userChoice; aviso = null;
+    document.getElementById("instalar").style.display = "none";
+  });
+  const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const instalada = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  if (esIOS && !instalada) document.getElementById("ayuda-ios").hidden = false;
+
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+</script>
+</body>
+</html>
