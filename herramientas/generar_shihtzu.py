@@ -1,9 +1,10 @@
 """
 Genera las 21 animaciones de cuerpo completo de KusiVox (GIF 240x240, fondo negro).
 
-Personaje original: "Kusi", un perrito cusqueno de pelaje caramelo con chullo (gorro
-andino con pompon) y poncho a rayas. Cada emocion es una animacion corta de 8 cuadros:
-salta, mueve las patas y la cola, levanta o baja las orejas y cambia ojos y hocico.
+Personaje original: "Kusi", un cachorro shih tzu sin ropa, solo con su pelaje blanco y
+dorado: copete en la cabeza, orejas largas, bigote y barba blancos y cola esponjosa.
+Cada emocion es una animacion corta de 8 cuadros: salta, mueve las patas y la cola,
+levanta o baja las orejas y cambia ojos y hocico.
 
 Se dibuja a 3x y se reduce para que los bordes salgan suaves.
 Uso: python3 generar_kusi.py [carpeta_salida]
@@ -23,10 +24,14 @@ SALIDA = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.p
 # ------------------------------------------------------------ colores
 NEGRO = (0, 0, 0)
 BLANCO = (255, 255, 255)
-PIEL = (226, 168, 104)          # pelaje caramelo
-PIEL_OSCURA = (150, 92, 54)     # orejas
-HOCICO = (252, 236, 212)
-NARIZ = (44, 28, 32)
+PELO = (250, 246, 238)          # pelaje blanco
+PELO_SOMBRA = (214, 204, 190)   # contorno suave sobre lo blanco
+DORADO = (226, 172, 96)         # manchas doradas
+DORADO_OSCURO = (184, 126, 64)
+DORADO_CLARO = (244, 206, 140)
+PIEL = DORADO                   # parpados: los ojos estan sobre las manchas doradas
+HOCICO = PELO
+NARIZ = (36, 24, 28)
 CHULLO = (214, 44, 72)
 CHULLO_AMARILLO = (252, 198, 58)
 CHULLO_BLANCO = (250, 246, 236)
@@ -38,9 +43,9 @@ FRANJA_2 = (232, 60, 98)
 MANGA = PIEL
 PANTALON = (66, 72, 128)
 OJOTA = (150, 98, 62)
-IRIS_ARRIBA = (120, 222, 255)
-IRIS_ABAJO = (28, 104, 196)
-PUPILA = (10, 24, 58)
+IRIS_ARRIBA = (176, 118, 66)
+IRIS_ABAJO = (70, 38, 20)
+PUPILA = (20, 10, 8)
 BOCA = (110, 26, 48)
 LENGUA = (255, 120, 150)
 DIENTES = (255, 255, 255)
@@ -268,7 +273,7 @@ def boca(l, tipo, t=0):
     """Hocico de perrito: la boca va debajo de la nariz."""
     cx, cy = 120, 127
     if tipo in ("sonrisa", "lengua", "rico", "neutral", "lado", "ondulada"):
-        l.linea([(cx, 116), (cx, cy - 5)], NARIZ, 1.8)
+        l.linea([(cx, 118), (cx, cy - 5)], NARIZ, 1.8)
     if tipo == "sonrisa":
         l.arco(cx - 5, cy - 6, 5, 4.5, 10, 170, NARIZ, 2.4)
         l.arco(cx + 5, cy - 6, 5, 4.5, 10, 170, NARIZ, 2.4)
@@ -333,49 +338,52 @@ def rubor_lineas(l):
 
 # ------------------------------------------------------------ cabeza y chullo
 
-def chullo(l, t=0, caido=False):
-    cx = 120
-    # copa del gorro
-    l.cuerda(cx, 80, 51, 33, 180, 360, CHULLO)
-    punta = 10 if caido else 0
-    l.poligono([(cx - 24, 54), (cx + 24, 54), (cx + 5 + punta, 34 + punta * 0.6)], CHULLO)
-    # franja con rombos (diseno andino) y borde blanco
-    l.rect(cx - 51, 67, cx + 51, 77, CHULLO_AMARILLO, 3)
-    for i in range(-5, 6):
-        x = cx + i * 9
-        l.poligono([(x, 68), (x + 4, 72), (x, 76), (x - 4, 72)], CHULLO if i % 2 else CHULLO_AZUL)
-    l.rect(cx - 52, 76, cx + 52, 81, CHULLO_BLANCO, 2)
-    l.rect(cx - 32, 58, cx + 32, 62, CHULLO_BLANCO, 2)
-    # pompon
-    px, py = cx + 5 + punta, 32 + punta * 0.8 + (0, -1, -2, -1)[t % 4]
-    l.circulo(px, py, 8, CHULLO_AMARILLO)
-    l.circulo(px - 2, py - 2, 3, (255, 236, 150))
-
-
-ANGULO_OREJAS = {"normal": 16, "arriba": 62, "caidas": -4, "atras": 38}
+ANGULO_OREJAS = {"normal": 4, "arriba": 40, "caidas": -5, "atras": 22}
 
 
 def oreja(img, lado, angulo):
-    """Oreja caida de perrito, colgada del borde del gorro; gira hacia afuera."""
-    ax, ay = 120 + lado * 40, 80
+    """Oreja larga y peluda de shih tzu; gira hacia afuera desde arriba de la cabeza."""
+    ax, ay = 120 + lado * 44, 84
     capa_o = capa()
     lo = Lapiz(capa_o)
-    lo.elipse(ax, ay + 21, 11, 25, PIEL_OSCURA)
-    lo.elipse(ax, ay + 24, 6, 16, (186, 120, 76))
+    lo.elipse(ax, ay + 22, 11, 25, DORADO)
+    for k in (-6, 0, 6):
+        lo.circulo(ax + k, ay + 44 + (2 if k == 0 else 0), 5.5, DORADO)
+    for k in (-4, 0, 4):
+        lo.linea([(ax + k, ay + 18), (ax + k * 1.3, ay + 42)], DORADO_OSCURO, 1.3)
     capa_o = capa_o.rotate(lado * angulo, resample=Image.BICUBIC, center=(p(ax), p(ay)))
     img.alpha_composite(capa_o)
 
 
+def copete(l, t):
+    """Mono de pelo dorado sobre la cabeza (sin lazo: solo pelaje)."""
+    vaiven = (0, 1, 2, 1, 0, -1, -2, -1)[t % 8]
+    x = 120 + vaiven
+    for dx in (-7, 0, 7):
+        l.linea([(x, 38), (x + dx * 1.2, 27 + abs(dx) * 0.6)], DORADO_CLARO, 3)
+    l.circulo(x - 8, 53, 8, DORADO)
+    l.circulo(x + 8, 53, 8, DORADO)
+    l.circulo(x, 45, 10.5, DORADO)
+    l.arco(x - 2, 44, 5, 4, 200, 300, DORADO_CLARO, 1.6)
+    l.linea([(x - 4, 47), (x - 3, 56)], DORADO_OSCURO, 1.3)
+    l.linea([(x + 4, 47), (x + 3, 56)], DORADO_OSCURO, 1.3)
+
+
 def cabeza(t, cara):
-    """Dibuja la cabeza del perrito en una capa propia (luego se inclina)."""
+    """Dibuja la cabeza del shih tzu en una capa propia (luego se inclina)."""
     img = capa()
     l = Lapiz(img)
     cx, cy = CENTRO_CABEZA
-    l.elipse(cx, cy, 47, 41, PIEL)
-    # hocico y nariz
-    l.elipse(cx, 121, 19, 14, HOCICO)
-    l.elipse(cx, 113, 7, 5, NARIZ)
-    l.circulo(cx - 2, 111.5, 1.7, (200, 190, 200))
+    l.circulo(cx, cy, 47, PELO)
+    l.cuerda(cx, 88, 46, 38, 180, 360, DORADO)
+    l.elipse(103, 99, 14.5, 13.5, DORADO)
+    l.elipse(137, 99, 14.5, 13.5, DORADO)
+    l.elipse(cx, 86, 6, 15, PELO)
+    l.elipse(cx, 137, 17, 9, PELO)
+    l.elipse(109, 123, 11, 8, PELO)
+    l.elipse(131, 123, 11, 8, PELO)
+    l.elipse(cx, 114, 7.5, 5.5, NARIZ)
+    l.circulo(cx - 2.5, 112.5, 1.8, (200, 190, 200))
     if cara.get("cejas"):
         cejas(l, cara["cejas"])
     if cara.get("lentes") is not None:
@@ -386,13 +394,12 @@ def cabeza(t, cara):
     if cara.get("rubor"):
         rubor_lineas(l)
     boca(l, cara.get("boca", "sonrisa"), t)
-    # orejas (se mueven un poco en cada cuadro) y gorro encima
     base = ANGULO_OREJAS[cara.get("orejas", estilo()[0])]
     vaiven = (0, 3, 5, 3, 0, -3, -5, -3)[t % 8] * cara.get("mueve_orejas", 0.6)
     oreja(img, -1, base + vaiven)
     oreja(img, 1, base - vaiven)
     l = Lapiz(img)
-    chullo(l, t, cara.get("chullo_caido", False))
+    copete(l, t)
     for extra in cara.get("extras", []):
         extra(l)
     return img
@@ -403,52 +410,44 @@ def cabeza(t, cara):
 def piernas(l, pose):
     pi, pd = pose
     for (cx, cy), (fx, fy) in ((CADERA_I, pi), (CADERA_D, pd)):
-        l.linea([(cx, cy), (fx, fy - 4)], PIEL, 13)
-        l.elipse(fx + (-3 if fx < 120 else 3), fy, 10, 5.5, HOCICO)
+        l.linea([(cx, cy), (fx, fy - 4)], PELO, 15)
+        dx = -3 if fx < 120 else 3
+        l.elipse(fx + dx, fy, 10.5, 6, PELO)
+        for k in (-4, 0, 4):
+            l.linea([(fx + k + dx, fy + 1), (fx + k + dx, fy + 5)], PELO_SOMBRA, 1.2, redondo=False)
 
 
 def cola(l, angulo):
-    """Cola de perrito: curva desde la cadera; angulo en grados (negativo = hacia arriba)."""
-    bx, by = 140, 168
+    """Cola esponjosa de shih tzu: un penacho que se curva sobre la espalda."""
+    bx, by = 140, 160
     a = math.radians(angulo)
     b = math.radians(angulo + 40)
-    punta = (bx + 36 * math.cos(a), by + 36 * math.sin(a))
+    punta = (bx + 34 * math.cos(a), by + 34 * math.sin(a))
     control = (bx + 22 * math.cos(b), by + 22 * math.sin(b))
-    pts = []
     for i in range(9):
         u = i / 8
         x = (1 - u) ** 2 * bx + 2 * (1 - u) * u * control[0] + u ** 2 * punta[0]
         y = (1 - u) ** 2 * by + 2 * (1 - u) * u * control[1] + u ** 2 * punta[1]
-        pts.append((x, y))
-    l.linea(pts, PIEL, 8)
-    l.circulo(punta[0], punta[1], 4.6, HOCICO)
+        l.circulo(x, y, 8.5 - u * 2, DORADO if i < 7 else PELO)
 
 
-def poncho(l, ancho=1.0):
+def cuerpo_peludo(l, ancho=1.0):
+    """Cuerpo esponjoso: pecho blanco, manchas doradas a los lados y flecos de pelo abajo."""
     cx = 120
-    a1, a2 = 24 * ancho, 40 * ancho
-    l.rect(cx - 18, 128, cx + 18, 150, MANGA, 6)
-    forma = [(cx - a1, 134), (cx + a1, 134), (cx + a2, 178), (cx - a2, 178)]
-    l.poligono(forma, PONCHO)
-    l.elipse(cx, 134, a1, 6, PONCHO)
-    l.cuerda(cx, 178, a2, 5, 0, 180, PONCHO)
-    # franjas
-    for y, color, g in ((154, FRANJA_1, 4), (160, FRANJA_2, 3), (166, FRANJA_1, 2.4)):
-        k = (y - 134) / 44
-        ax = a1 + (a2 - a1) * k
-        l.linea([(cx - ax + 2, y), (cx + ax - 2, y)], color, g, redondo=False)
-    # cuello y rombo central
-    l.elipse(cx, 134, 10, 4, PONCHO_OSCURO)
-    l.poligono([(cx, 140), (cx + 5, 145), (cx, 150), (cx - 5, 145)], FRANJA_1)
-    # flecos
-    for i in range(-6, 7):
-        x = cx + i * (a2 / 6.6)
-        l.linea([(x, 181), (x, 186)], FRANJA_1, 1.4, redondo=False)
+    l.elipse(cx, 158, 31 * ancho, 28, PELO)
+    l.elipse(cx - 24 * ancho, 152, 9, 15, DORADO)
+    l.elipse(cx + 24 * ancho, 152, 9, 15, DORADO)
+    for i in range(-3, 4):
+        l.circulo(cx + i * 8.5 * ancho, 182 + (1 if i % 2 else 0), 7, PELO)
+    for x, y in ((112, 146), (126, 150), (118, 162), (130, 166), (108, 168)):
+        l.arco(x, y, 5, 3, 20, 160, PELO_SOMBRA, 1.2)
 
 
 def brazo(l, hombro, codo, mano):
-    l.linea([hombro, codo, mano], PIEL, 10)
-    l.circulo(mano[0], mano[1], 6.6, HOCICO)
+    l.linea([hombro, codo, mano], PELO_SOMBRA, 13)
+    l.linea([hombro, codo, mano], PELO, 10.4)
+    l.circulo(mano[0], mano[1], 7.6, PELO_SOMBRA)
+    l.circulo(mano[0], mano[1], 6.6, PELO)
 
 
 def mover(img, dx=0, dy=0, sx=1.0, sy=1.0, ancla=(120, SUELO)):
@@ -476,7 +475,7 @@ def personaje(t, pose):
     angulo_cola = pose.get("cola", cola_base) + menea * math.sin(t / 8 * 2 * math.pi * pose.get("rapidez", cola_rapidez))
     cola(l, angulo_cola)
     piernas(l, (pie_i, pie_d))
-    poncho(l, pose.get("ancho", 1.0))
+    cuerpo_peludo(l, pose.get("ancho", 1.0))
     bi = pose.get("brazo_i", ((92, 158), (90, 172)))
     bd = pose.get("brazo_d", ((148, 158), (150, 172)))
     atras = pose.get("brazos_atras", False)
@@ -638,11 +637,11 @@ def obj_corazon_manos(l, t):
 
 def obj_hueso(l, t):
     dy = -2 if t % 2 else 0
-    hueso = (246, 240, 226)
-    l.linea([(142, 142 + dy), (162, 122 + dy)], hueso, 6)
-    for x, y in ((142, 142), (162, 122)):
-        l.circulo(x - 3, y + dy + 1, 4, hueso)
-        l.circulo(x + 1, y + dy + 3, 4, hueso)
+    for color, extra in (((150, 118, 84), 1.6), ((250, 222, 170), 0)):
+        l.linea([(142, 142 + dy), (162, 122 + dy)], color, 6 + extra * 2)
+        for x, y in ((142, 142), (162, 122)):
+            l.circulo(x - 3, y + dy + 1, 4 + extra, color)
+            l.circulo(x + 1, y + dy + 3, 4 + extra, color)
 
 
 def obj_lagrimas(lado_y=108):
