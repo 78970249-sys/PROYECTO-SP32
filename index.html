@@ -86,7 +86,7 @@
   <!-- INICIO -->
   <section id="inicio" class="activa">
     <div class="tarjeta hero">
-      <div class="pantalla"><img id="cara" src="img/neutral.gif" alt="Kusi, el shih tzu de KusiVox, animado"></div>
+      <div class="pantalla"><img id="cara" src="img/neutral.gif" alt="KusiVox, el cachorro shih tzu, animado"></div>
       <div>
         <h2>Di “KusiVox” y habla</h2>
         <p class="nota">KusiVox conversa en español, muestra sus emociones en la pantalla y puede manejar tu computadora con Windows.</p>
@@ -99,7 +99,7 @@
     <div class="tarjeta">
       <ol class="pasos">
         <li><h3>Carga la batería</h3><p>Conecta un cargador USB-C de 5 V. La luz roja indica que está cargando.</p></li>
-        <li><h3>Enciende KusiVox</h3><p>Usa el interruptor. En la pantalla aparece Kusi, su cachorro shih tzu.</p></li>
+        <li><h3>Enciende KusiVox</h3><p>Usa el interruptor. En la pantalla aparece KusiVox como un cachorro shih tzu animado.</p></li>
         <li><h3>Conéctalo al Wi-Fi</h3><p>Solo la primera vez. Mira la pestaña <a href="#configurar">Configurar</a>.</p></li>
         <li><h3>Actívalo en xiaozhi.me</h3><p>Ingresa el código de 6 dígitos que dice KusiVox.</p></li>
         <li><h3>Instala KusiVox en tu PC</h3><p>Para manejar la computadora con la voz. Mira la pestaña <a href="#pc">PC</a>.</p></li>
@@ -248,7 +248,7 @@
   window.addEventListener("hashchange", mostrar);
   mostrar();
 
-  // Kusi cambia de emoción (son las mismas animaciones de la pantalla del ESP32)
+  // KusiVox cambia de emoción (son las mismas animaciones de la pantalla del ESP32)
   const caras = ["neutral", "happy", "winking", "thinking", "loving"];
   let i = 0;
   setInterval(() => { i = (i + 1) % caras.length; document.getElementById("cara").src = `img/${caras[i]}.gif`; }, 3000);
