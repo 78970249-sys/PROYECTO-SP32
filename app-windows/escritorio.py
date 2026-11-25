@@ -33,6 +33,10 @@ servidor = MCPServer(
         "escribir_texto, o reproducir_en_youtube y luego controlar_multimedia. "
         "Para poner musica o videos usa reproducir_en_youtube. Para apagar, reiniciar, suspender o bloquear "
         "usa energia; antes de apagar, reiniciar o cerrar sesion pregunta si esta seguro. "
+        "Acepta cualquier forma de pedir: sinonimos, errores de pronunciacion y ordenes indirectas "
+        "('no escucho nada' = subir volumen, 'no veo bien las letras' = abrir la lupa). "
+        "Pasa a la herramienta las palabras del usuario: la app entiende 'mas fuerte', 'la calcu' o 'block de notas'. "
+        "Muchos usuarios tienen discapacidad visual o motriz: actua sin pedir que usen el raton. "
         "Responde en espanol con una frase corta."
     ),
 )
@@ -43,7 +47,8 @@ servidor = MCPServer(
 @servidor.tool()
 def abrir_aplicacion(nombre: str) -> dict:
     """Abre una aplicacion instalada en la computadora Windows del usuario.
-    Ejemplos: 'abre Word', 'abre la calculadora', 'abre Visual Studio Code', 'abre el navegador'.
+    Ejemplos: 'abre Word', 'la calcu', 'ejecuta Excel', 'el navegador', 'block de notas'.
+    Accesibilidad: 'lupa' (agranda la pantalla), 'narrador' (lee la pantalla), 'teclado en pantalla'.
     nombre: el nombre de la aplicacion tal como lo dijo."""
     resultado = aw.abrir_aplicacion(nombre)
     if resultado.get("exito"):
@@ -99,7 +104,8 @@ def abrir_carpeta(nombre: str) -> dict:
 def controlar_multimedia(accion: str, veces: int = 0) -> dict:
     """Controla la musica o el video que esta sonando y el volumen de la computadora.
     accion: 'pausar' o 'reproducir' (es la misma tecla), 'siguiente', 'anterior', 'detener',
-    'subir volumen', 'bajar volumen' o 'silenciar'.
+    'subir volumen', 'bajar volumen' o 'silenciar'. Tambien entiende 'mas fuerte', 'bajale',
+    'esta muy alto', 'pasa a la otra', 'quita el sonido'.
     veces: cuantas pulsaciones (opcional). Cada pulsacion de volumen cambia ~2 %;
     si no se indica, el volumen cambia ~10 %."""
     return cw.controlar_multimedia(accion, veces)
@@ -187,7 +193,8 @@ def cerrar_aplicacion(nombre: str) -> dict:
 def abrir_configuracion(seccion: str) -> dict:
     """Abre una seccion de la Configuracion de Windows: wifi, bluetooth, pantalla, sonido,
     actualizaciones, bateria, energia, aplicaciones, fondo de pantalla, tema, fecha y hora, idioma,
-    almacenamiento, mouse, notificaciones, impresoras o configuracion (inicio)."""
+    almacenamiento, mouse, notificaciones, impresoras, configuracion (inicio) y accesibilidad:
+    lupa, narrador, texto grande, alto contraste o puntero del mouse."""
     return sw.abrir_configuracion(seccion)
 
 

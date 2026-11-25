@@ -1,6 +1,8 @@
-## KusiVox 1.1.0
+## KusiVox 1.2.0
 
-Asistente de voz KusiVox: app de Windows y firmware del dispositivo. Novedad de la 1.1.0: el ícono y el dispositivo ahora muestran a KusiVox como un cachorro shih tzu.
+Asistente de escritorio por voz KusiVox: app de Windows y firmware del dispositivo.
+
+Novedades de la 1.2.0: KusiVox entiende muchas más formas de pedir lo mismo. Por ejemplo «más fuerte», «bájale», «está muy alto», «pasa a la otra», «la calcu», «block de notas», «wasap», «a dormir» o «pon las letras grandes». También abre las herramientas de accesibilidad de Windows: lupa, narrador, teclado en pantalla, texto grande y alto contraste.
 
 **Descargas**
 

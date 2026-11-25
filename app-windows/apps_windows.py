@@ -54,6 +54,35 @@ ALIAS = {
     "camara": ["camara", "camera"],
     "reloj": ["reloj", "clock"],
     "fotos": ["fotos", "photos"],
+    # formas coloquiales y errores comunes del reconocimiento de voz
+    "calcu": ["calculadora", "calculator"],
+    "calculadora": ["calculadora", "calculator"],
+    "block de notas": ["bloc de notas", "notepad"],
+    "block": ["bloc de notas", "notepad"],
+    "bloc": ["bloc de notas", "notepad"],
+    "notepad": ["bloc de notas", "notepad"],
+    "guord": ["word"], "uord": ["word"], "documento": ["word"], "procesador de texto": ["word"],
+    "hoja de calculo": ["excel"], "hojas de calculo": ["excel"], "ecsel": ["excel"],
+    "presentacion": ["powerpoint"], "presentaciones": ["powerpoint"], "diapositivas": ["powerpoint"],
+    "google": ["google chrome", "chrome", "microsoft edge"],
+    "google chrome": ["google chrome"], "crom": ["google chrome"], "cromo": ["google chrome"],
+    "wasap": ["whatsapp"], "guasap": ["whatsapp"], "whatsap": ["whatsapp"], "wsp": ["whatsapp"],
+    "mensajes": ["whatsapp"],
+    "espotifai": ["spotify"], "spotifai": ["spotify"],
+    "correo": ["outlook", "correo", "mail"],
+    "recortes": ["recortes", "snipping tool"], "herramienta de recortes": ["recortes", "snipping tool"],
+    "tienda": ["microsoft store"], "store": ["microsoft store"],
+    "mapas": ["mapas", "maps"],
+    "grabadora": ["grabadora de sonido", "grabadora", "sound recorder"],
+    "grabadora de voz": ["grabadora de sonido", "grabadora", "sound recorder"],
+    "reproductor": ["reproductor multimedia", "media player", "windows media player"],
+    "pain": ["paint"], "peint": ["paint"],
+    "administrador de tareas": ["administrador de tareas", "task manager"],
+    # herramientas de accesibilidad de Windows
+    "lupa": ["lupa", "magnifier"],
+    "narrador": ["narrador", "narrator"],
+    "teclado en pantalla": ["teclado en pantalla", "on screen keyboard"],
+    "teclado virtual": ["teclado en pantalla", "on screen keyboard"],
 }
 
 # Si no aparece en el menu Inicio, se intenta abrir directamente.
@@ -73,6 +102,16 @@ DIRECTOS = {
     "administrador de tareas": "taskmgr.exe",
     "configuracion": "ms-settings:",
     "ajustes": "ms-settings:",
+    "calcu": "calc.exe",
+    "block de notas": "notepad.exe",
+    "block": "notepad.exe",
+    "bloc": "notepad.exe",
+    "pain": "mspaint.exe",
+    # accesibilidad: lupa, narrador y teclado en pantalla vienen con Windows
+    "lupa": "magnify.exe",
+    "narrador": "narrator.exe",
+    "teclado en pantalla": "osk.exe",
+    "teclado virtual": "osk.exe",
 }
 
 # Entradas del menu Inicio que casi nunca son lo que la persona quiere abrir.
@@ -103,6 +142,12 @@ SITIOS = {
     "xiaozhi": "https://xiaozhi.me",
     "wikipedia": "https://es.wikipedia.org",
     "outlook": "https://outlook.live.com",
+    "hotmail": "https://outlook.live.com",
+    "yutub": "https://www.youtube.com", "youtub": "https://www.youtube.com", "you tube": "https://www.youtube.com",
+    "face": "https://www.facebook.com", "feisbuk": "https://www.facebook.com",
+    "insta": "https://www.instagram.com", "tik tok": "https://www.tiktok.com",
+    "wasap": "https://web.whatsapp.com", "guasap": "https://web.whatsapp.com", "whatsap": "https://web.whatsapp.com",
+    "correo de google": "https://mail.google.com", "traductor de google": "https://translate.google.com",
 }
 
 CARPETAS = {
@@ -118,6 +163,12 @@ CARPETAS = {
     "mi pc": "shell:MyComputerFolder",
     "papelera": "shell:RecycleBinFolder",
     "papelera de reciclaje": "shell:RecycleBinFolder",
+    "reciclaje": "shell:RecycleBinFolder",
+    "mis descargas": "shell:Downloads", "downloads": "shell:Downloads", "desktop": "shell:Desktop",
+    "documents": "shell:Personal", "mis imagenes": "shell:My Pictures", "mis fotos": "shell:My Pictures",
+    "mi musica": "shell:My Music", "mis videos": "shell:My Video",
+    "capturas": "shell:Screenshots", "capturas de pantalla": "shell:Screenshots",
+    "mi computadora": "shell:MyComputerFolder", "computadora": "shell:MyComputerFolder",
 }
 
 _cache = {"hora": 0.0, "apps": []}
@@ -131,18 +182,29 @@ def normalizar(texto: str) -> str:
     return " ".join(texto.split())
 
 
+RELLENO = {
+    "abre", "abrir", "abreme", "abrime", "abri", "ejecuta", "ejecutar", "inicia", "iniciar", "lanza",
+    "pon", "ponme", "quiero", "necesito", "activa", "activar", "enciende", "prende", "usar",
+    "el", "la", "los", "las", "un", "una", "de", "del", "app", "aplicacion", "aplicativo", "programa",
+    "por", "favor", "porfa", "porfavor", "mi", "ahora", "rapido", "ahi"}
+
+# Verbos con que suele empezar una orden: 'ejecuta el excel', 'puedes abrir word', 'entra a youtube'.
+VERBOS = (r"^(?:por favor |porfa )?(?:puedes |podrias |me |quiero |necesito )?"
+          r"(?:abre|abrir|abreme|abrime|abri|abres|ejecuta|ejecutar|inicia|iniciar|lanza|lanzar|"
+          r"pon|ponme|entra a|entra en|entrar a|ir a|ve a|activa|activar|enciende|prende|usar)\s+")
+
+
 def _quitar_relleno(consulta: str) -> str:
     """Quita palabras que suelen venir en la orden: 'la aplicacion de word' -> 'word'."""
-    palabras = [p for p in consulta.split() if p not in (
-        "abre", "abrir", "abreme", "el", "la", "los", "las", "un", "una", "de", "del",
-        "app", "aplicacion", "programa", "por", "favor", "porfa", "mi")]
+    palabras = [p for p in consulta.split() if p not in RELLENO]
     return " ".join(palabras) or consulta
 
 
 def _variantes(nombre: str) -> list:
     """Formas de buscar lo que dijo la persona: tal cual y sin palabras de relleno.
     'Bloc de notas' -> ['bloc de notas', 'bloc notas']."""
-    tal_cual = re.sub(r"^(abre|abrir|abreme)\s+", "", normalizar(nombre))
+    tal_cual = re.sub(VERBOS, "", normalizar(nombre))
+    tal_cual = re.sub(r"\s+(por favor|porfa|porfavor)$", "", tal_cual)
     limpio = _quitar_relleno(tal_cual)
     sin_articulo = re.sub(r"^(el|la|los|las|mi|mis)\s+", "", tal_cual)
     return [v for v in dict.fromkeys([tal_cual, sin_articulo, limpio]) if v]
@@ -311,8 +373,9 @@ def url_para(direccion: str) -> str:
     if re.match(r"^https?://", texto, re.IGNORECASE):
         return texto
     clave = normalizar(texto)
-    if clave in SITIOS:
-        return SITIOS[clave]
+    for intento in (clave, re.sub(r"^(?:la |el )?(?:pagina |sitio |web |pagina web )?(?:de |del )?", "", re.sub(VERBOS, "", clave))):
+        if intento in SITIOS:
+            return SITIOS[intento]
     if re.fullmatch(r"[\w-]+(\.[\w-]+)+(/\S*)?", texto):
         return "https://" + texto
     return "https://www.google.com/search?q=" + urllib.parse.quote_plus(texto)
@@ -351,6 +414,13 @@ def abrir_carpeta(nombre: str, lanzar=None) -> dict:
         if v in CARPETAS:
             destino, clave = CARPETAS[v], v
             break
+    if not destino:
+        # 'abre la carpeta de descargas por favor' -> 'descargas' (la frase mas larga primero)
+        frase = normalizar(nombre)
+        for k in sorted(CARPETAS, key=len, reverse=True):
+            if re.search(r"\b" + re.escape(k) + r"\b", frase):
+                destino, clave = CARPETAS[k], k
+                break
     if not destino:
         return {"exito": False,
                 "mensaje": f"No conozco la carpeta '{nombre}'. Puedo abrir: "

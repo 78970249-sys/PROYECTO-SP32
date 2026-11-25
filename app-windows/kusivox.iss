@@ -1,6 +1,6 @@
 ; Instalador de KusiVox para Windows (Inno Setup 6)
 #define MyAppName "KusiVox"
-#define MyAppVersion "1.1.0"
+#define MyAppVersion "1.2.0"
 
 [Setup]
 AppId={{B6E2C1A4-6F1B-4C1E-9F3A-2D5E8A7C4B10}

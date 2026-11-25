@@ -120,6 +120,34 @@ MULTIMEDIA = {
     "silenciar": 0xAD, "mute": 0xAD, "quitar silencio": 0xAD, "activar sonido": 0xAD,
 }
 
+# Si la accion no esta tal cual, se busca por palabras clave, en este orden.
+# Asi se entienden formas como 'mas fuerte', 'bajale un poco', 'pasa a la otra' o 'quita el sonido'.
+PALABRAS_MULTIMEDIA = [
+    (0xAD, ("silenci", "mute", "mutea", "sin sonido", "quita el sonido", "quitale el sonido", "calla",
+            "activa el sonido", "devuelve el sonido")),
+    (0xAE, ("muy fuerte", "muy alto", "demasiado fuerte", "demasiado alto", "menos fuerte", "mas bajo",
+            "mas despacio", "mas suave", "menos volumen")),
+    (0xAF, ("sub", "aument", "mas fuerte", "mas alto", "mas volumen", "dale volumen", "fuerte",
+            "no escucho", "no se escucha", "no oigo")),
+    (0xAE, ("baj", "disminu", "despacio", "suave")),
+    (0xB0, ("siguiente", "proxim", "otra cancion", "otro video", "otro tema", "la otra", "pasa", "salta",
+            "adelant", "next")),
+    (0xB1, ("anterior", "atras", "regresa", "previous")),
+    (0xB2, ("deten", "stop")),
+    (0xB3, ("paus", "para", "reproduc", "play", "continu", "reanud", "sigue", "dale", "pon")),
+]
+
+
+def accion_multimedia(accion: str):
+    """Codigo de tecla multimedia para lo que pidio la persona, o None si no se entiende."""
+    clave = normalizar(accion)
+    if clave in MULTIMEDIA:
+        return MULTIMEDIA[clave]
+    for vk, palabras in PALABRAS_MULTIMEDIA:
+        if any(re.search(r"\b" + re.escape(p), clave) for p in palabras):
+            return vk
+    return None
+
 # Ventanas donde no se escribe texto: ahi el texto podria ejecutarse como comando.
 CLASES_PROHIBIDAS = {"ConsoleWindowClass", "CASCADIA_HOSTING_WINDOW_CLASS", "PseudoConsoleWindow"}
 TITULOS_PROHIBIDOS = ("powershell", "simbolo del sistema", "command prompt", "cmd.exe",
@@ -194,7 +222,7 @@ def presionar_teclas(teclas: str, veces: int = 1, enviar=None) -> dict:
 def controlar_multimedia(accion: str, veces: int = 0, enviar=None) -> dict:
     enviar = enviar or _enviar
     clave = normalizar(accion)
-    vk = MULTIMEDIA.get(clave)
+    vk = accion_multimedia(accion)
     if vk is None:
         return {"exito": False,
                 "mensaje": "Accion no valida. Usa: reproducir/pausar, siguiente, anterior, detener, "
@@ -270,11 +298,34 @@ def ver_ventanas() -> dict:
             "ventanas_abiertas": [t for _, t in listar_ventanas()][:30]}
 
 
+# Lo que la gente dice -> lo que aparece en el titulo de la ventana.
+ALIAS_VENTANAS = {
+    "navegador": ["chrome", "edge", "firefox"], "internet": ["chrome", "edge", "firefox"],
+    "google": ["chrome"], "crom": ["chrome"], "calcu": ["calculadora"], "block de notas": ["bloc de notas"],
+    "block": ["bloc de notas"], "notas": ["bloc de notas"], "musica": ["youtube", "spotify"],
+    "video": ["youtube"], "wasap": ["whatsapp"], "guasap": ["whatsapp"], "explorador": ["explorador de archivos"],
+}
+
+
+def buscar_ventanas(nombre: str, ventanas: list) -> list:
+    """Ventanas [(hwnd, titulo)] que corresponden a lo que dijo la persona: 'la ventana de Chrome',
+    'el navegador', 'la calcu'. Primero coincidencia completa, luego por alias y luego por palabras."""
+    buscado = re.sub(r"^(?:cambia|cambiate|pasa|pasate|ve|vuelve|regresa|ir)?\s*(?:a |al )?", "", normalizar(nombre))
+    buscado = re.sub(r"^(?:la |el )?(?:ventana |pestana |programa |aplicacion )?(?:de |del )?(?:la |el )?", "", buscado)
+    if not buscado:
+        return []
+    for objetivo in [buscado] + ALIAS_VENTANAS.get(buscado, []):
+        encontradas = [(h, t) for h, t in ventanas if objetivo in normalizar(t)]
+        if encontradas:
+            return encontradas
+    palabras = [p for p in buscado.split() if len(p) > 3]
+    return [(h, t) for h, t in ventanas if any(p in normalizar(t) for p in palabras)]
+
+
 def cambiar_a_ventana(nombre: str) -> dict:
     if not ES_WINDOWS:
         return {"exito": False, "mensaje": "Este programa solo funciona en Windows."}
-    buscado = normalizar(nombre)
-    candidatas = [(h, t) for h, t in listar_ventanas() if buscado and buscado in normalizar(t)]
+    candidatas = buscar_ventanas(nombre, listar_ventanas())
     if not candidatas:
         return {"exito": False, "mensaje": f"No hay ninguna ventana abierta con '{nombre}'.",
                 "ventanas_abiertas": [t for _, t in listar_ventanas()][:20]}

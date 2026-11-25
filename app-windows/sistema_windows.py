@@ -12,6 +12,7 @@ import datetime
 import logging
 import os
 import shutil
+import re
 import subprocess
 import time
 
@@ -46,6 +47,14 @@ ENERGIA = {
     "cerrar sesion": "cerrar sesion", "cierra sesion": "cerrar sesion", "cierra la sesion": "cerrar sesion",
     "apagar pantalla": "apagar pantalla", "apaga la pantalla": "apagar pantalla", "apagar monitor": "apagar pantalla",
     "apaga el monitor": "apagar pantalla",
+    # otras formas de decirlo
+    "apagate": "apagar", "apaga el equipo": "apagar", "apaga la laptop": "apagar", "apaga todo": "apagar",
+    "reiniciate": "reiniciar", "reinicio": "reiniciar",
+    "no apagues": "cancelar", "ya no apagues": "cancelar", "deten el apagado": "cancelar", "no reinicies": "cancelar",
+    "duerme": "suspender", "a dormir": "suspender", "en reposo": "suspender", "reposo": "suspender",
+    "bloqueala": "bloquear", "bloqueo": "bloquear", "pon contrasena": "bloquear",
+    "salir de la sesion": "cerrar sesion", "salir de sesion": "cerrar sesion", "desconectate": "cerrar sesion",
+    "apaga el monitor": "apagar pantalla", "pantalla negra": "apagar pantalla", "apaga la pantallita": "apagar pantalla",
 }
 NECESITAN_CONFIRMAR = {"apagar", "reiniciar", "cerrar sesion"}
 
@@ -65,6 +74,21 @@ CONFIGURACION = {
     "privacidad": "ms-settings:privacy", "mouse": "ms-settings:mousetouchpad", "raton": "ms-settings:mousetouchpad",
     "notificaciones": "ms-settings:notifications", "impresoras": "ms-settings:printers",
     "configuracion": "ms-settings:", "ajustes": "ms-settings:",
+    # otras formas de decirlo
+    "conexion": "ms-settings:network", "conexiones": "ms-settings:network",
+    "audifonos": "ms-settings:sound", "parlantes": "ms-settings:sound", "altavoces": "ms-settings:sound",
+    "microfono": "ms-settings:sound", "volumen": "ms-settings:sound",
+    "actualizar": "ms-settings:windowsupdate", "actualizacion": "ms-settings:windowsupdate",
+    "teclado": "ms-settings:typing", "camara": "ms-settings:privacy-webcam",
+    "pantalla de bloqueo": "ms-settings:lockscreen", "region": "ms-settings:regionlanguage",
+    "voz": "ms-settings:speech", "reconocimiento de voz": "ms-settings:speech",
+    # accesibilidad
+    "accesibilidad": "ms-settings:easeofaccess", "lupa": "ms-settings:easeofaccess-magnifier",
+    "narrador": "ms-settings:easeofaccess-narrator", "texto grande": "ms-settings:easeofaccess-display",
+    "tamano del texto": "ms-settings:easeofaccess-display", "tamano de letra": "ms-settings:easeofaccess-display",
+    "letras grandes": "ms-settings:easeofaccess-display", "contraste": "ms-settings:easeofaccess-highcontrast",
+    "alto contraste": "ms-settings:easeofaccess-highcontrast", "puntero": "ms-settings:easeofaccess-mousepointer",
+    "cursor": "ms-settings:easeofaccess-mousepointer",
 }
 
 
@@ -169,13 +193,11 @@ def cerrar_aplicacion(nombre: str, ventanas=None, cerrar=None) -> dict:
         ventanas = cw.listar_ventanas()
     if cerrar is None:
         cerrar = lambda h: user32.PostMessageW(h, 0x0010, 0, 0)
-    buscado = cw.normalizar(nombre)
-    for relleno in ("la aplicacion ", "el programa ", "la ", "el "):
-        if buscado.startswith(relleno):
-            buscado = buscado[len(relleno):]
+    elegidas = {h for h, _ in cw.buscar_ventanas(re.sub(r"^(?:cierra|cierrame|cerrar|quita)\s+", "",
+                                                         cw.normalizar(nombre)), ventanas)}
     cerradas, protegidas = [], []
     for hwnd, titulo in ventanas:
-        if buscado and buscado in cw.normalizar(titulo):
+        if hwnd in elegidas:
             if cw.es_ventana_prohibida(titulo, ""):
                 protegidas.append(titulo)
                 continue
@@ -194,10 +216,18 @@ def cerrar_aplicacion(nombre: str, ventanas=None, cerrar=None) -> dict:
 def abrir_configuracion(seccion: str, abrir=None) -> dict:
     abrir = abrir or os.startfile
     clave = cw.normalizar(seccion)
-    for quitar in ("la configuracion de ", "configuracion de ", "ajustes de ", "el ", "la ", "los ", "las "):
+    for quitar in ("la configuracion del ", "la configuracion de ", "configuracion del ", "configuracion de ",
+                   "ajustes del ", "ajustes de ", "el ", "la ", "los ", "las "):
         if clave.startswith(quitar):
             clave = clave[len(quitar):]
     destino = CONFIGURACION.get(clave)
+    if destino is None:
+        # 'pon las letras mas grandes' -> 'letras grandes' no esta tal cual: se busca la frase mas larga contenida
+        generales = ("configuracion", "ajustes")  # solo si no se nombro una seccion concreta
+        for k in sorted(CONFIGURACION, key=lambda k: (k in generales, -len(k))):
+            if len(k) > 2 and re.search(r"\b" + re.escape(k) + r"\b", clave):
+                destino, clave = CONFIGURACION[k], k
+                break
     if destino is None:
         return {"exito": False, "mensaje": "Seccion no reconocida. Puedo abrir: "
                                            + ", ".join(sorted({k for k in CONFIGURACION if len(k) > 3}))}

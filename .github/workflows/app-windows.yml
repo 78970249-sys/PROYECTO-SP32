@@ -36,6 +36,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt pyinstaller
 
+      - name: Probar que entiende distintas formas de pedir
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python prueba_frases.py
+
       - name: Compilar los ejecutables
         run: |
           pyinstaller --noconfirm --clean --onefile --windowed --name KusiVox --icon kusivox.ico --add-data "kusivox.ico;." kusivox_app.py
@@ -96,10 +101,10 @@ jobs:
           name: kusivox-windows
           path: app-windows/Output/*
 
-      - name: Publicar la version KusiVox 1.1.0
+      - name: Publicar la version KusiVox 1.2.0
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete kusivox-v1.1.0 --yes --cleanup-tag 2>$null
+          gh release delete kusivox-v1.2.0 --yes --cleanup-tag 2>$null
           $global:LASTEXITCODE = 0
-          gh release create kusivox-v1.1.0 (Get-ChildItem Output\*).FullName --title "KusiVox 1.1.0" --notes-file NOTAS.md --target $env:GITHUB_SHA
+          gh release create kusivox-v1.2.0 (Get-ChildItem Output\*).FullName --title "KusiVox 1.2.0" --notes-file NOTAS.md --target $env:GITHUB_SHA
