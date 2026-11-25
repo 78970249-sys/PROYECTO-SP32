@@ -1,8 +1,8 @@
 // Guarda la app para que funcione sin internet (útil al configurar el Wi-Fi de KusiVox).
-const CACHE = "kusivox-v3";
+const CACHE = "kusivox-v4";
 const ARCHIVOS = ["./", "index.html", "manifest.webmanifest", "img/icon-192.png", "img/icon-512.png",
-  "img/maskable-512.png", "img/apple-touch-icon.png", "img/neutral.png", "img/happy.png", "img/winking.png",
-  "img/thinking.png", "img/sleepy.png"];
+  "img/maskable-512.png", "img/apple-touch-icon.png", "img/kusi-cabeza.png", "img/neutral.gif", "img/happy.gif",
+  "img/winking.gif", "img/thinking.gif", "img/loving.gif"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ARCHIVOS))); self.skipWaiting(); });
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))));

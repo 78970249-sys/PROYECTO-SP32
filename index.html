@@ -78,7 +78,7 @@
 </head>
 <body>
 <header>
-  <img src="img/happy.png" alt="">
+  <img src="img/kusi-cabeza.png" alt="">
   <div><h1>KusiVox</h1><p>Tu asistente de voz</p></div>
 </header>
 
@@ -86,7 +86,7 @@
   <!-- INICIO -->
   <section id="inicio" class="activa">
     <div class="tarjeta hero">
-      <div class="pantalla"><img id="cara" src="img/neutral.png" alt="Carita de KusiVox"></div>
+      <div class="pantalla"><img id="cara" src="img/neutral.gif" alt="Kusi, el shih tzu de KusiVox, animado"></div>
       <div>
         <h2>Di “KusiVox” y habla</h2>
         <p class="nota">KusiVox conversa en español, muestra sus emociones en la pantalla y puede manejar tu computadora con Windows.</p>
@@ -99,7 +99,7 @@
     <div class="tarjeta">
       <ol class="pasos">
         <li><h3>Carga la batería</h3><p>Conecta un cargador USB-C de 5 V. La luz roja indica que está cargando.</p></li>
-        <li><h3>Enciende KusiVox</h3><p>Usa el interruptor. En la pantalla aparece su carita.</p></li>
+        <li><h3>Enciende KusiVox</h3><p>Usa el interruptor. En la pantalla aparece Kusi, su cachorro shih tzu.</p></li>
         <li><h3>Conéctalo al Wi-Fi</h3><p>Solo la primera vez. Mira la pestaña <a href="#configurar">Configurar</a>.</p></li>
         <li><h3>Actívalo en xiaozhi.me</h3><p>Ingresa el código de 6 dígitos que dice KusiVox.</p></li>
         <li><h3>Instala KusiVox en tu PC</h3><p>Para manejar la computadora con la voz. Mira la pestaña <a href="#pc">PC</a>.</p></li>
@@ -248,10 +248,10 @@
   window.addEventListener("hashchange", mostrar);
   mostrar();
 
-  // Carita que cambia de emoción
-  const caras = ["neutral", "happy", "winking", "thinking", "happy"];
+  // Kusi cambia de emoción (son las mismas animaciones de la pantalla del ESP32)
+  const caras = ["neutral", "happy", "winking", "thinking", "loving"];
   let i = 0;
-  setInterval(() => { i = (i + 1) % caras.length; document.getElementById("cara").src = `img/${caras[i]}.png`; }, 2500);
+  setInterval(() => { i = (i + 1) % caras.length; document.getElementById("cara").src = `img/${caras[i]}.gif`; }, 3000);
 
   // Instalación como app
   let aviso = null;
