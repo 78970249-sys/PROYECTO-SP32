@@ -1,5 +1,5 @@
 # Compila el firmware XiaoZhi para la protoboard con pantalla LCD ST7789 240x240 de 8 pines,
-# con Kusi, un cachorro shih tzu de cuerpo completo (carpeta caritas/: 21 animaciones GIF de 240x240).
+# con KusiVox como cachorro shih tzu de cuerpo completo (carpeta caritas/: 21 animaciones GIF de 240x240).
 #
 # Cambios respecto al firmware oficial:
 #  - Senal SPI de la pantalla a 20 MHz (el oficial usa 40 MHz) para cables dupont largos.

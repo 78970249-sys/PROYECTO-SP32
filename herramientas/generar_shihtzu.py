@@ -1,7 +1,7 @@
 """
 Genera las 21 animaciones de cuerpo completo de KusiVox (GIF 240x240, fondo negro).
 
-Personaje original: "Kusi", un cachorro shih tzu sin ropa, solo con su pelaje blanco y
+Personaje original: KusiVox como cachorro shih tzu sin ropa, solo con su pelaje blanco y
 dorado: copete en la cabeza, orejas largas, bigote y barba blancos y cola esponjosa.
 Cada emocion es una animacion corta de 8 cuadros: salta, mueve las patas y la cola,
 levanta o baja las orejas y cambia ojos y hocico.
