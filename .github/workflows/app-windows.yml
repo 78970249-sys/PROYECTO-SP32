@@ -85,8 +85,10 @@ jobs:
       - name: Agregar el firmware de KusiVox (si ya esta compilado)
         run: |
           git fetch origin descarga-firmware
-          cmd /c "git show origin/descarga-firmware:firmware/kusivox-lcd-240x240-20mhz-bateria.bin > Output\kusivox-lcd-240x240-20mhz-bateria.bin"
-          if ((Get-Item Output\kusivox-lcd-240x240-20mhz-bateria.bin).Length -lt 1000000) { Remove-Item Output\kusivox-lcd-240x240-20mhz-bateria.bin; "Firmware aun no disponible" }
+          foreach ($f in @("kusivox-v2-shihtzu.bin", "kusivox-lcd-240x240-20mhz-bateria.bin")) {
+            cmd /c "git show origin/descarga-firmware:firmware/$f > Output\$f"
+            if ((Get-Item "Output\$f").Length -lt 1000000) { Remove-Item "Output\$f"; "Firmware $f aun no disponible" }
+          }
           Get-FileHash Output\* -Algorithm SHA256 | Format-Table Hash, Path -AutoSize | Out-String -Width 220
 
       - uses: actions/upload-artifact@v4
@@ -94,10 +96,10 @@ jobs:
           name: kusivox-windows
           path: app-windows/Output/*
 
-      - name: Publicar la version KusiVox 1.0.0
+      - name: Publicar la version KusiVox 1.1.0
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete kusivox-v1.0.0 --yes --cleanup-tag 2>$null
+          gh release delete kusivox-v1.1.0 --yes --cleanup-tag 2>$null
           $global:LASTEXITCODE = 0
-          gh release create kusivox-v1.0.0 (Get-ChildItem Output\*).FullName --title "KusiVox 1.0.0" --notes-file NOTAS.md --target $env:GITHUB_SHA
+          gh release create kusivox-v1.1.0 (Get-ChildItem Output\*).FullName --title "KusiVox 1.1.0" --notes-file NOTAS.md --target $env:GITHUB_SHA

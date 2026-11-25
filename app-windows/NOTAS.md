@@ -1,12 +1,13 @@
-## KusiVox 1.0.0
+## KusiVox 1.1.0
 
-Asistente de voz KusiVox: app de Windows y firmware del dispositivo.
+Asistente de voz KusiVox: app de Windows y firmware del dispositivo. Novedad de la 1.1.0: el ícono y el dispositivo ahora muestran a Kusi, un cachorro shih tzu.
 
 **Descargas**
 
 - `KusiVox-Setup.exe`: instalador para Windows 10 y 11 (64 bits). No necesita Python ni permisos de administrador.
 - `KusiVox-Portable.zip`: la misma app sin instalar (descomprimir y abrir `KusiVox.exe`).
-- `kusivox-lcd-240x240-20mhz-bateria.bin`: firmware del dispositivo (grabar con ESP Tool en la dirección 0x0).
+- `kusivox-v2-shihtzu.bin`: firmware del dispositivo con Kusi, el cachorro shih tzu animado, y emociones que cambian en cada frase (grabar con ESP Tool en la dirección 0x0).
+- `kusivox-lcd-240x240-20mhz-bateria.bin`: firmware anterior con caritas, por si se quiere volver atrás.
 
 **Primer uso**
 

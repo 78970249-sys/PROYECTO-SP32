@@ -24,7 +24,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 APP = "KusiVox"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 URL_CONSOLA = "https://xiaozhi.me"
 URL_APP_CELULAR = "https://78970249-sys.github.io/PROYECTO-SP32/"
 CARPETA_DATOS = Path(os.environ.get("APPDATA") or Path.home()) / APP
