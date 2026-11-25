@@ -1,9 +1,11 @@
 # Compila el firmware XiaoZhi para la protoboard con pantalla LCD ST7789 240x240 de 8 pines,
-# con las caritas animadas propias de la carpeta caritas/ (21 GIF de 240x240).
+# con el personaje Kusi de cuerpo completo (carpeta caritas/: 21 animaciones GIF de 240x240).
 #
 # Cambios respecto al firmware oficial:
 #  - Senal SPI de la pantalla a 20 MHz (el oficial usa 40 MHz) para cables dupont largos.
-#  - Las caritas de caritas/ reemplazan los emojis por defecto.
+#  - Las animaciones de caritas/ (personaje con chullo y poncho) reemplazan los emojis por defecto.
+#  - Emociones por frase: el personaje cambia de animacion segun las palabras de cada frase
+#    que dice (firmware/kusivox/emocion_por_frase.h).
 #  - Producto KusiVox: palabra de activacion personalizada "kusi vox" con MultiNet7
 #    en ingles (mn7_en), red de configuracion "KusiVox-XXXX" e indicador de bateria
 #    (18650: divisor 100k/100k en GPIO 1; USB conectado por divisor en GPIO 2).
@@ -11,7 +13,7 @@
 # Conexiones de la pantalla: SCL->GPIO21, SDA->GPIO47, RES->GPIO45, DC->GPIO40,
 # CS->GPIO41, BLK->GPIO42, VCC->3V3, GND->GND.
 #
-# Resultado: kusivox-lcd-240x240-20mhz-bateria.bin (artefacto y rama descarga-firmware).
+# Resultado: kusivox-v2-personaje.bin (artefacto y rama descarga-firmware).
 # Se graba con ESP Tool en la direccion 0x0.
 
 name: Firmware pantalla LCD 240x240
@@ -29,13 +31,13 @@ permissions:
 
 jobs:
   build:
-    name: Compilar KusiVox (ST7789 240x240, 20 MHz, caritas, bateria)
+    name: Compilar KusiVox v2 (personaje animado, emociones por frase, bateria)
     runs-on: ubuntu-latest
     container:
       image: espressif/idf:release-v6.1
     env:
       CUSTOM_EMOJI_DIR: ${{ github.workspace }}/proyecto/caritas
-      ARCHIVO: kusivox-lcd-240x240-20mhz-bateria.bin
+      ARCHIVO: kusivox-v2-personaje.bin
     steps:
       - name: Descargar el firmware oficial xiaozhi-esp32 (v2.6.0)
         uses: actions/checkout@v7
@@ -132,6 +134,42 @@ jobs:
           grep -n "adc_battery_monitor_\|AdcBatteryMonitor" main/boards/bread-compact-wifi-lcd/compact_wifi_board_lcd.cc
           grep -n "ssid_prefix =" main/boards/common/wifi_board.cc
 
+      - name: Emociones por frase (el personaje cambia mientras habla)
+        shell: bash
+        run: |
+          cp proyecto/firmware/kusivox/emocion_por_frase.h main/emocion_por_frase.h
+          python3 - <<'EOF'
+          p = "main/application.cc"
+          s = open(p, encoding="utf-8").read()
+          inc = '#define TAG "Application"\n'
+          assert s.count(inc) == 1
+          s = s.replace(inc, '#include "emocion_por_frase.h"\n\n' + inc)
+          viejo = ('                    ESP_LOGI(TAG, "<< %s", text->valuestring);\n'
+                   '                    Schedule([display, message = std::string(text->valuestring),\n'
+                   '                              glyphs = std::move(glyphs), bpp]() {\n'
+                   '                        display->AddTextGlyphs(glyphs, bpp);\n'
+                   '                        display->SetChatMessage("assistant", message.c_str());\n'
+                   '                    });\n')
+          nuevo = ('                    ESP_LOGI(TAG, "<< %s", text->valuestring);\n'
+                   '                    const char* emocion_frase = kusivox::EmocionDeFrase(text->valuestring);\n'
+                   '                    std::string emocion = emocion_frase ? emocion_frase : "";\n'
+                   '                    if (!emocion.empty()) {\n'
+                   '                        ESP_LOGI(TAG, "Emocion de la frase: %s", emocion.c_str());\n'
+                   '                    }\n'
+                   '                    Schedule([display, message = std::string(text->valuestring),\n'
+                   '                              glyphs = std::move(glyphs), bpp, emocion]() {\n'
+                   '                        display->AddTextGlyphs(glyphs, bpp);\n'
+                   '                        display->SetChatMessage("assistant", message.c_str());\n'
+                   '                        if (!emocion.empty()) {\n'
+                   '                            display->SetEmotion(emocion.c_str());\n'
+                   '                        }\n'
+                   '                    });\n')
+          assert s.count(viejo) == 1, "no se encontro el bloque sentence_start"
+          s = s.replace(viejo, nuevo)
+          open(p, "w", encoding="utf-8").write(s)
+          EOF
+          grep -n "emocion_por_frase.h\|EmocionDeFrase\|SetEmotion(emocion" main/application.cc
+
       - name: Compilar (español, palabra de activación KusiVox)
         shell: bash
         run: |
@@ -155,6 +193,13 @@ jobs:
           assert b'"kusi vox"' in datos, "falta el comando kusi vox en index.json"
           assert b"KusiVox" in datos, "falta el nombre KusiVox"
           print("palabra de activacion KusiVox (mn7_en) dentro del firmware: OK")
+          import glob, os
+          for ruta in sorted(glob.glob("proyecto/caritas/*.gif")):
+              assert open(ruta, "rb").read() in datos, f"falta la animacion {os.path.basename(ruta)}"
+          print("21 animaciones del personaje dentro del firmware: OK")
+          for clave in (b" no puede ser", b" dejame pensar", b" lo siento"):
+              assert clave in datos, f"falta la regla {clave}"
+          print("emociones por frase dentro del firmware: OK")
           EOF
           grep -E "CONFIG_USE_CUSTOM_WAKE_WORD|CONFIG_CUSTOM_WAKE_WORD|CONFIG_SR_MN_EN|CONFIG_USE_AFE_WAKE_WORD" sdkconfig
           cp build/merged-binary.bin "$ARCHIVO"
@@ -165,7 +210,7 @@ jobs:
       - name: Subir el firmware (artefacto)
         uses: actions/upload-artifact@v7
         with:
-          name: kusivox-lcd-240x240-20mhz-bateria
+          name: kusivox-v2-personaje
           path: ${{ env.ARCHIVO }}
           if-no-files-found: error
 
@@ -180,5 +225,5 @@ jobs:
           cp "../$ARCHIVO" firmware/
           git add "firmware/$ARCHIVO"
           git -c user.name="github-actions[bot]" -c user.email="41898283+github-actions[bot]@users.noreply.github.com" \
-            commit -m "Firmware KusiVox LCD 240x240 20 MHz con bateria"
+            commit -m "Firmware KusiVox v2: personaje animado y emociones por frase"
           git push origin descarga-firmware
