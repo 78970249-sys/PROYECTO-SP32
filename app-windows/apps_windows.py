@@ -433,7 +433,11 @@ def elegir_navegador(texto: str, ruta=None) -> dict:
 def abrir_en_navegador(url: str, navegador: str = "") -> None:
     """Abre la URL en el navegador pedido, el elegido por voz, el predeterminado de Windows o Chrome."""
     pedido = nombre_navegador(navegador) if navegador else None
-    for candidato in (pedido, navegador_elegido(), navegador_predeterminado(), "chrome", "edge"):
+    predeterminado = navegador_predeterminado()
+    # Edge suele ser el predeterminado de fabrica: si hay Chrome o Brave instalado, se prefieren.
+    orden = (pedido, navegador_elegido(), predeterminado if predeterminado != "edge" else None,
+             "chrome", "brave", "firefox", predeterminado, "edge")
+    for candidato in orden:
         ruta = ruta_navegador(candidato) if candidato else None
         if ruta:
             subprocess.Popen([ruta, url], creationflags=SIN_VENTANA)

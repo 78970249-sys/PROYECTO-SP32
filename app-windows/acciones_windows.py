@@ -61,18 +61,8 @@ PROTEGIDO = "Por seguridad no actuo sobre terminales, PowerShell, la ventana Eje
 # ================================================================ ventanas
 
 def enfocar(hwnd) -> bool:
-    """Trae una ventana al frente y confirma que quedo activa."""
-    if not ES_WINDOWS:
-        return False
-    if user32.IsIconic(hwnd):
-        user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-    cw._enviar([cw._evento(0x12, 0, 0), cw._evento(0x12, 0, cw.KEYEVENTF_KEYUP)])  # Alt libera el foco
-    user32.SetForegroundWindow(hwnd)
-    for _ in range(10):
-        if user32.GetForegroundWindow() == hwnd:
-            return True
-        time.sleep(0.05)
-    return user32.GetForegroundWindow() == hwnd
+    """Trae una ventana al frente y confirma que quedo activa (sin pulsar Alt)."""
+    return ES_WINDOWS and cw.traer_al_frente(hwnd)
 
 
 def ventana_activa_protegida() -> bool:

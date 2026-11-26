@@ -75,6 +75,11 @@ if ES_WINDOWS:
     user32.ShowWindow.argtypes = (HWND, ctypes.c_int)
     user32.SetForegroundWindow.argtypes = (HWND,)
     user32.EnumWindows.argtypes = (ENUM_VENTANAS, ctypes.c_void_p)
+    user32.GetWindowThreadProcessId.argtypes = (HWND, ctypes.c_void_p)
+    user32.GetWindowThreadProcessId.restype = ctypes.c_uint32
+    user32.AttachThreadInput.argtypes = (ctypes.c_uint32, ctypes.c_uint32, ctypes.c_bool)
+    user32.BringWindowToTop.argtypes = (HWND,)
+    kernel32 = ctypes.WinDLL("kernel32")
     dwmapi.DwmGetWindowAttribute.argtypes = (HWND, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_uint32)
 else:
     user32 = dwmapi = None
@@ -322,6 +327,32 @@ def buscar_ventanas(nombre: str, ventanas: list) -> list:
     return [(h, t) for h, t in ventanas if any(p in normalizar(t) for p in palabras)]
 
 
+def traer_al_frente(hwnd) -> bool:
+    """Trae una ventana al frente SIN pulsar Alt (Alt activa el menu de Word o del Bloc de notas y
+    las letras que se escriben despues se toman como atajos del menu)."""
+    if user32.IsIconic(hwnd):
+        user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+    # Un movimiento de mouse de 0 pixeles cuenta como entrada nuestra: Windows deja cambiar el foco.
+    movimiento = INPUT(type=0)
+    movimiento.mi = MOUSEINPUT(dx=0, dy=0, mouseData=0, dwFlags=0x0001, time=0, dwExtraInfo=0)
+    _enviar([movimiento])
+    frente = user32.GetForegroundWindow()
+    hilo_frente = user32.GetWindowThreadProcessId(frente, None) if frente else 0
+    hilo_propio = kernel32.GetCurrentThreadId()
+    unido = bool(hilo_frente and hilo_frente != hilo_propio and user32.AttachThreadInput(hilo_propio, hilo_frente, True))
+    try:
+        user32.BringWindowToTop(hwnd)
+        user32.SetForegroundWindow(hwnd)
+    finally:
+        if unido:
+            user32.AttachThreadInput(hilo_propio, hilo_frente, False)
+    for _ in range(20):
+        if user32.GetForegroundWindow() == hwnd:
+            return True
+        time.sleep(0.05)
+    return False
+
+
 def cambiar_a_ventana(nombre: str) -> dict:
     if not ES_WINDOWS:
         return {"exito": False, "mensaje": "Este programa solo funciona en Windows."}
@@ -330,11 +361,7 @@ def cambiar_a_ventana(nombre: str) -> dict:
         return {"exito": False, "mensaje": f"No hay ninguna ventana abierta con '{nombre}'.",
                 "ventanas_abiertas": [t for _, t in listar_ventanas()][:20]}
     hwnd, titulo = candidatas[0]
-    if user32.IsIconic(hwnd):
-        user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-    # Pulsar Alt permite a Windows pasar el foco a otra ventana.
-    _enviar([_evento(0x12, 0, 0), _evento(0x12, 0, KEYEVENTF_KEYUP)])
-    if not user32.SetForegroundWindow(hwnd):
+    if not traer_al_frente(hwnd):
         return {"exito": False, "mensaje": f"Windows no dejo pasar al frente '{titulo}'."}
     log.info("Ventana al frente: %s", titulo)
     return {"exito": True, "ventana": titulo}

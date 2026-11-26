@@ -59,11 +59,15 @@ revisar(r.get("exito"), f"orden libre 'abre la calculadora': {str(r)[:160]}", ob
 # YouTube en la misma pestana (informativa: depende de Chrome y de la red del servidor de pruebas)
 ac.abrir_reutilizando("https://www.youtube.com/watch?v=jNQXAC9IVRw")
 time.sleep(12)
-antes = [t for _, t in cw.listar_ventanas() if "chrome" in t.lower()]
+def ventanas_youtube():
+    return [t for _, t in cw.listar_ventanas() if "youtube" in t.lower()]
+
+
+antes = ventanas_youtube()
 reutilizo = ac.navegar_en_pestana("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
 time.sleep(6)
-despues = [t for _, t in cw.listar_ventanas() if "chrome" in t.lower()]
-revisar(reutilizo and len(despues) == len(antes), f"YouTube en la misma pestana: antes={antes} despues={despues}",
+despues = ventanas_youtube()
+revisar(reutilizo and len(antes) == 1 and len(despues) == 1, f"YouTube en la misma pestana: antes={antes} despues={despues}",
         obligatoria=False)
 
 print(f"\nTOTAL: {total}  FALLOS: {fallos}")
