@@ -1,10 +1,13 @@
 # Compila el firmware XiaoZhi para la protoboard con pantalla LCD ST7789 240x240 de 8 pines,
-# con KusiVox como cachorro shih tzu de cuerpo completo (carpeta caritas/: 21 animaciones GIF de 240x240).
+# con las mascotas de KusiVox (carpeta mascotas/: perrito, gatito, conejito, osito panda y pajarito,
+# 12 emociones cada uno, GIF de 240x240) que se eligen por voz junto con su color.
 #
 # Cambios respecto al firmware oficial:
 #  - Senal SPI de la pantalla a 20 MHz (el oficial usa 40 MHz) para cables dupont largos.
-#  - Las animaciones de caritas/ (shih tzu sin ropa, solo con su pelaje, generadas con
-#    herramientas/generar_shihtzu.py) reemplazan los emojis por defecto.
+#  - Las animaciones de mascotas/ (estilo realista, generadas con herramientas/generar_mascotas.py)
+#    reemplazan los emojis por defecto. Cada animal tiene 3 colores: el firmware cambia el pelaje
+#    reemplazando la paleta del GIF al abrirlo (firmware/kusivox/mascota.h), sin guardar copias.
+#  - Herramienta de voz self.mascota.cambiar: "ponte gatito", "quiero un panda cafe".
 #  - Emociones por frase: el personaje cambia de animacion segun las palabras de cada frase
 #    que dice (firmware/kusivox/emocion_por_frase.h).
 #  - Producto KusiVox: palabra de activacion personalizada "kusi vox" con MultiNet7
@@ -14,7 +17,7 @@
 # Conexiones de la pantalla: SCL->GPIO21, SDA->GPIO47, RES->GPIO45, DC->GPIO40,
 # CS->GPIO41, BLK->GPIO42, VCC->3V3, GND->GND.
 #
-# Resultado: kusivox-v2-shihtzu.bin (artefacto y rama descarga-firmware).
+# Resultado: kusivox-v3-mascotas.bin (artefacto y rama descarga-firmware).
 # Se graba con ESP Tool en la direccion 0x0.
 
 name: Firmware pantalla LCD 240x240
@@ -32,13 +35,13 @@ permissions:
 
 jobs:
   build:
-    name: Compilar KusiVox v2 (shih tzu animado, emociones por frase, bateria)
+    name: Compilar KusiVox v3 (5 mascotas con colores, emociones por frase, bateria)
     runs-on: ubuntu-latest
     container:
       image: espressif/idf:release-v6.1
     env:
-      CUSTOM_EMOJI_DIR: ${{ github.workspace }}/proyecto/caritas
-      ARCHIVO: kusivox-v2-shihtzu.bin
+      CUSTOM_EMOJI_DIR: ${{ github.workspace }}/proyecto/mascotas
+      ARCHIVO: kusivox-v3-mascotas.bin
     steps:
       - name: Descargar el firmware oficial xiaozhi-esp32 (v2.6.0)
         uses: actions/checkout@v7
@@ -46,7 +49,7 @@ jobs:
           repository: 78/xiaozhi-esp32
           ref: aaf1eb7798cabee87a0c6a0649aabf4d17e9e383
 
-      - name: Descargar este proyecto (caritas)
+      - name: Descargar este proyecto (mascotas)
         uses: actions/checkout@v7
         with:
           path: proyecto
@@ -58,11 +61,13 @@ jobs:
           sed -i 's/io_config.pclk_hz = 40 \* 1000 \* 1000;/io_config.pclk_hz = 20 * 1000 * 1000;/' "$FILE"
           grep -n "io_config.pclk_hz = 20 \* 1000 \* 1000;" "$FILE"
 
-      - name: Usar las caritas propias como emojis
+      - name: Usar las mascotas como emojis
         shell: bash
         run: |
           ls "$CUSTOM_EMOJI_DIR"/*.gif | wc -l
-          test -f "$CUSTOM_EMOJI_DIR/neutral.gif"
+          test "$(ls "$CUSTOM_EMOJI_DIR"/*.gif | wc -l)" -eq 60
+          test -f "$CUSTOM_EMOJI_DIR/perro_neutral.gif"
+          test -z "$(ls "$CUSTOM_EMOJI_DIR" | grep -v '\.gif$')"
           python3 - <<'EOF'
           p = "scripts/build_default_assets.py"
           s = open(p, encoding="utf-8").read()
@@ -171,6 +176,74 @@ jobs:
           EOF
           grep -n "emocion_por_frase.h\|EmocionDeFrase\|SetEmotion(emocion" main/application.cc
 
+      - name: Mascotas por voz (animal y color)
+        shell: bash
+        run: |
+          cp proyecto/firmware/kusivox/mascota.h proyecto/firmware/kusivox/paletas_mascotas.h main/
+          python3 - <<'EOF'
+          # 1) La pantalla busca la animacion de la mascota elegida (gato_happy) y si no, la normal.
+          p = "main/display/lcd_display.cc"
+          s = open(p, encoding="utf-8").read()
+          assert s.count('#include "settings.h"\n') == 1
+          s = s.replace('#include "settings.h"\n', '#include "settings.h"\n#include "mascota.h"\n')
+          viejo = "    auto image = emoji_collection != nullptr ? emoji_collection->GetEmojiImage(emotion) : nullptr;\n"
+          nuevo = ("    const LvglImage* image = nullptr;\n"
+                   "    if (emoji_collection != nullptr) {\n"
+                   "        char nombre_mascota[48];\n"
+                   "        if (kusivox::NombreConMascota(emotion, nombre_mascota, sizeof(nombre_mascota))) {\n"
+                   "            image = emoji_collection->GetEmojiImage(nombre_mascota);\n"
+                   "        }\n"
+                   "        if (image == nullptr) {\n"
+                   "            image = emoji_collection->GetEmojiImage(emotion);\n"
+                   "        }\n"
+                   "    }\n")
+          assert s.count(viejo) == 1, "no se encontro la busqueda de la emocion"
+          open(p, "w", encoding="utf-8").write(s.replace(viejo, nuevo))
+
+          # 2) Al abrir cada GIF se aplica el color elegido (reemplaza el pelaje de la paleta global).
+          p = "main/display/lvgl_display/gif/lvgl_gif.cc"
+          s = open(p, encoding="utf-8").read()
+          assert s.count('#include "lvgl_gif.h"\n') == 1
+          s = s.replace('#include "lvgl_gif.h"\n', '#include "lvgl_gif.h"\n#include "mascota.h"\n')
+          viejo = ('        ESP_LOGE(TAG, "Failed to open GIF from image descriptor");\n'
+                   '        return;\n'
+                   '    }\n')
+          nuevo = viejo + ("\n    // KusiVox: color de la mascota elegida\n"
+                           "    kusivox::AplicarColorMascota(gif_->gct.colors, gif_->gct.size);\n")
+          assert s.count(viejo) == 1, "no se encontro la apertura del GIF"
+          open(p, "w", encoding="utf-8").write(s.replace(viejo, nuevo))
+
+          # 3) Herramienta de voz para cambiar de mascota y de color.
+          p = "main/boards/bread-compact-wifi-lcd/compact_wifi_board_lcd.cc"
+          s = open(p, encoding="utf-8").read()
+          assert s.count('#include "mcp_server.h"\n') == 1
+          s = s.replace('#include "mcp_server.h"\n', '#include "mcp_server.h"\n#include "mascota.h"\n')
+          viejo = "        static LampController lamp(LAMP_GPIO);\n    }\n"
+          nuevo = ("        static LampController lamp(LAMP_GPIO);\n"
+                   "        // KusiVox: cambiar de mascota y de color por voz\n"
+                   "        McpServer::GetInstance().AddTool(\"self.mascota.cambiar\",\n"
+                   "            \"Cambia la mascota que KusiVox muestra en su pantalla y su color. \"\n"
+                   "            \"animal: perrito, gatito, conejito, osito panda o pajarito (vacio = el actual). \"\n"
+                   "            \"color: por ejemplo blanco, dorado, cafe, negro, naranja, gris, amarillo, celeste o rojo \"\n"
+                   "            \"(vacio = el de siempre). Usalo cuando pidan otra mascota u otro color, por ejemplo \"\n"
+                   "            \"'ponte gatito', 'quiero un panda cafe' o 'cambia a color gris'.\",\n"
+                   "            PropertyList({Property(\"animal\", kPropertyTypeString, std::string(\"\")),\n"
+                   "                          Property(\"color\", kPropertyTypeString, std::string(\"\"))}),\n"
+                   "            [this](const PropertyList& properties) -> ReturnValue {\n"
+                   "                std::string respuesta = kusivox::CambiarMascota(\n"
+                   "                    properties[\"animal\"].value<std::string>(), properties[\"color\"].value<std::string>());\n"
+                   "                auto display = GetDisplay();\n"
+                   "                if (display) {\n"
+                   "                    display->SetEmotion(\"happy\");\n"
+                   "                }\n"
+                   "                return respuesta;\n"
+                   "            });\n"
+                   "    }\n")
+          assert s.count(viejo) == 1, "no se encontro InitializeTools"
+          open(p, "w", encoding="utf-8").write(s.replace(viejo, nuevo))
+          EOF
+          grep -n "mascota" main/display/lcd_display.cc main/display/lvgl_display/gif/lvgl_gif.cc main/boards/bread-compact-wifi-lcd/compact_wifi_board_lcd.cc
+
       - name: Compilar (español, palabra de activación KusiVox)
         shell: bash
         run: |
@@ -182,22 +255,28 @@ jobs:
             --wake-word kusivox \
             --build-options-json '{"display_model":"LCD_ST7789_240X240"}'
 
-      - name: Comprobar que las caritas quedaron dentro y mostrar MD5
+      - name: Comprobar que las mascotas quedaron dentro y mostrar MD5
         shell: bash
         run: |
           python3 - <<'EOF'
           datos = open("build/merged-binary.bin", "rb").read()
-          faltan = [n for n in ("neutral.gif", "happy.gif", "loving.gif", "confused.gif") if n.encode() not in datos]
-          assert not faltan, f"faltan caritas: {faltan}"
-          print("caritas dentro del firmware: OK")
+          faltan = [n for n in ("perro_neutral.gif", "gato_happy.gif", "conejo_loving.gif", "panda_confused.gif",
+                                "pajaro_sleepy.gif") if n.encode() not in datos]
+          assert not faltan, f"faltan mascotas: {faltan}"
+          print("mascotas dentro del firmware: OK")
           assert b"mn7_en" in datos, "falta el modelo MultiNet7 en ingles"
           assert b'"kusi vox"' in datos, "falta el comando kusi vox en index.json"
           assert b"KusiVox" in datos, "falta el nombre KusiVox"
           print("palabra de activacion KusiVox (mn7_en) dentro del firmware: OK")
           import glob, os
-          for ruta in sorted(glob.glob("proyecto/caritas/*.gif")):
+          rutas = sorted(glob.glob("proyecto/mascotas/*.gif"))
+          assert len(rutas) == 60
+          for ruta in rutas:
               assert open(ruta, "rb").read() in datos, f"falta la animacion {os.path.basename(ruta)}"
-          print("21 animaciones del shih tzu dentro del firmware: OK")
+          print("60 animaciones de las 5 mascotas dentro del firmware: OK")
+          for clave in (b"self.mascota.cambiar", "blanco y dorado".encode(), "café".encode(), b"pajarito"):
+              assert clave in datos, f"falta {clave}"
+          print("cambio de mascota y colores por voz dentro del firmware: OK")
           for clave in (b" no puede ser", b" dejame pensar", b" lo siento"):
               assert clave in datos, f"falta la regla {clave}"
           print("emociones por frase dentro del firmware: OK")
@@ -211,7 +290,7 @@ jobs:
       - name: Subir el firmware (artefacto)
         uses: actions/upload-artifact@v7
         with:
-          name: kusivox-v2-shihtzu
+          name: kusivox-v3-mascotas
           path: ${{ env.ARCHIVO }}
           if-no-files-found: error
 
@@ -226,5 +305,5 @@ jobs:
           cp "../$ARCHIVO" firmware/
           git add "firmware/$ARCHIVO"
           git -c user.name="github-actions[bot]" -c user.email="41898283+github-actions[bot]@users.noreply.github.com" \
-            commit -m "Firmware KusiVox v2: shih tzu animado y emociones por frase"
+            commit -m "Firmware KusiVox v3: 5 mascotas con colores, elegidas por voz"
           git push origin descarga-firmware
