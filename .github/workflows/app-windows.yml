@@ -92,6 +92,8 @@ jobs:
         env:
           PYTHONIOENCODING: utf-8
         run: |
+          # Chrome nuevo muestra una bienvenida; el archivo "First Run" la salta (solo en el servidor de pruebas)
+          New-Item -ItemType File -Force "$env:LOCALAPPDATA\Google\Chrome\User Data\First Run" | Out-Null
           python prueba_windows_real.py
           $codigo = $LASTEXITCODE
           Get-Process notepad, chrome, msedge, CalculatorApp, calc -ErrorAction SilentlyContinue | Stop-Process -Force

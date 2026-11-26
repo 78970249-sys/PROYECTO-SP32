@@ -69,6 +69,7 @@ time.sleep(6)
 despues = ventanas_youtube()
 revisar(reutilizo and len(antes) == 1 and len(despues) == 1, f"YouTube en la misma pestana: antes={antes} despues={despues}",
         obligatoria=False)
+print("ventanas abiertas:", [t for _, t in cw.listar_ventanas()][:12])
 
 print(f"\nTOTAL: {total}  FALLOS: {fallos}")
 sys.exit(1 if fallos else 0)

@@ -262,7 +262,7 @@ COLORES = {"fondo": "#0B1220", "panel": "#141F33", "panel2": "#1B2942", "borde":
            "suave": "#AEB8C8", "acento": "#1A93CF", "acento2": "#157AAD", "rosa": "#FF6E9C", "verde": "#2FB57A",
            "ambar": "#E0A030", "gris": "#7A8699", "chip": "#20314F"}
 ESTADOS = {
-    "desconectado": ("Desconectado", "Pega tu MCP endpoint y pulsa «Conectar».", COLORES["gris"], "dormido"),
+    "desconectado": ("Desconectado", "Pega tu MCP endpoint y pulsa «Guardar y conectar».", COLORES["gris"], "dormido"),
     "conectando": ("Conectando…", "Un momento, estoy entrando a xiaozhi.me.", COLORES["ambar"], "pensando"),
     "reintentando": ("Reconectando…", "Se cortó la conexión; vuelvo a intentarlo solo.", COLORES["ambar"], "pensando"),
     "conectado": ("Conectado", "Di «KusiVox» y pide lo que necesites.", COLORES["verde"], "feliz"),
@@ -292,8 +292,8 @@ class Ventana:
         self.raiz = raiz = tk.Tk()
         raiz.title(f"{APP} {VERSION}")
         escala = max(1.0, raiz.winfo_fpixels("1i") / 96.0)
-        raiz.geometry(f"{int(600 * escala)}x{int(780 * escala)}")
-        raiz.minsize(int(520 * escala), int(640 * escala))
+        raiz.geometry(f"{int(600 * escala)}x{int(690 * escala)}")
+        raiz.minsize(int(520 * escala), int(600 * escala))
         raiz.configure(bg=COLORES["fondo"])
         self._icono()
 
@@ -311,7 +311,7 @@ class Ventana:
 
         # --- cabecera: KusiVox animado + nombre
         cab = tk.Frame(raiz, bg=COLORES["fondo"])
-        cab.pack(fill="x", padx=22, pady=(20, 10))
+        cab.pack(fill="x", padx=22, pady=(16, 8))
         pantalla = tk.Frame(cab, bg="#000000", highlightbackground=COLORES["acento"], highlightthickness=2)
         pantalla.pack(side="left")
         self.lienzo = tk.Label(pantalla, bg="#000000", width=120, height=120)
@@ -392,7 +392,7 @@ class Ventana:
             anchor="w", padx=22, pady=(12, 4))
         marco = tk.Frame(raiz, bg=COLORES["panel"], highlightbackground=COLORES["borde"], highlightthickness=1)
         marco.pack(fill="both", expand=True, padx=22)
-        self.registro = tk.Text(marco, height=7, font=("Consolas", 9), bg=COLORES["panel"], fg=COLORES["texto"], relief="flat",
+        self.registro = tk.Text(marco, height=5, font=("Consolas", 9), bg=COLORES["panel"], fg=COLORES["texto"], relief="flat",
                                 wrap="word", state="disabled", padx=12, pady=8)
         barra = ttk.Scrollbar(marco, command=self.registro.yview)
         self.registro.configure(yscrollcommand=barra.set)
