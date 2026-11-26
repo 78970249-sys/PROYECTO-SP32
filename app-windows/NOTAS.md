@@ -13,13 +13,14 @@ Novedades de la 1.3.0:
 - **Siempre conectado:** el instalador lo deja iniciando con Windows, la X lo minimiza en vez de cerrarlo, se reconecta en pocos segundos y evita que la PC se suspenda.
 - **Ventana nueva:** KusiVox animado según el estado de la conexión y ejemplos de órdenes.
 - **Más rápido:** menos esperas al abrir programas y el menú Inicio se lee al arrancar.
+- **Firmware v3 con mascotas:** perrito, gatito, conejito, osito panda o pajarito, en 3 colores, elegidos por voz.
 
 **Descargas**
 
 - `KusiVox-Setup.exe`: instalador para Windows 10 y 11 (64 bits). No necesita Python ni permisos de administrador.
 - `KusiVox-Portable.zip`: la misma app sin instalar (descomprimir y abrir `KusiVox.exe`).
-- `kusivox-v2-shihtzu.bin`: firmware del dispositivo con KusiVox como cachorro shih tzu animado, y emociones que cambian en cada frase (grabar con ESP Tool en la dirección 0x0).
-- `kusivox-lcd-240x240-20mhz-bateria.bin`: firmware anterior con caritas, por si se quiere volver atrás.
+- `kusivox-v3-mascotas.bin`: firmware del dispositivo con 5 mascotas realistas (perrito, gatito, conejito, osito panda y pajarito), 3 colores cada una, que se eligen por voz («KusiVox, ponte gatito», «quiero un panda café»). Grabar con ESP Tool en la dirección 0x0.
+- `kusivox-v2-shihtzu.bin`: firmware anterior, con el shih tzu de dibujo animado.
 
 **Primer uso**
 

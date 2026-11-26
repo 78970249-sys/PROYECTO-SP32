@@ -110,7 +110,7 @@ jobs:
       - name: Agregar el firmware de KusiVox (si ya esta compilado)
         run: |
           git fetch origin descarga-firmware
-          foreach ($f in @("kusivox-v2-shihtzu.bin", "kusivox-lcd-240x240-20mhz-bateria.bin")) {
+          foreach ($f in @("kusivox-v3-mascotas.bin", "kusivox-v2-shihtzu.bin")) {
             cmd /c "git show origin/descarga-firmware:firmware/$f > Output\$f"
             if ((Get-Item "Output\$f").Length -lt 1000000) { Remove-Item "Output\$f"; "Firmware $f aun no disponible" }
           }
