@@ -345,26 +345,100 @@ def listar_aplicaciones(filtro: str = "", apps=None, limite: int = 40) -> dict:
 
 # ---------------------------------------------------------------- web y carpetas
 
-def ruta_chrome():
-    """Ruta de chrome.exe si Google Chrome esta instalado; si no, None."""
-    if not ES_WINDOWS:
+# Navegadores que KusiVox sabe abrir: ruta del .exe dentro de Archivos de programa o AppData.
+NAVEGADORES = {
+    "brave": (r"BraveSoftware\Brave-Browser\Application\brave.exe",),
+    "chrome": (r"Google\Chrome\Application\chrome.exe",),
+    "edge": (r"Microsoft\Edge\Application\msedge.exe",),
+    "firefox": (r"Mozilla Firefox\firefox.exe",),
+    "opera": (r"Programs\Opera\opera.exe", r"Opera\opera.exe"),
+}
+NOMBRES_NAVEGADOR = {
+    "brave": "brave", "brave browser": "brave", "breiv": "brave", "breif": "brave",
+    "chrome": "chrome", "google chrome": "chrome", "crom": "chrome", "google": "chrome",
+    "edge": "edge", "microsoft edge": "edge", "ech": "edge",
+    "firefox": "firefox", "mozilla": "firefox", "mozilla firefox": "firefox", "opera": "opera",
+    "predeterminado": "", "el predeterminado": "", "el de windows": "",
+}
+# ProgId del navegador predeterminado de Windows -> navegador
+PROGID_NAVEGADOR = {"bravehtml": "brave", "chromehtml": "chrome", "msedgehtm": "edge",
+                    "firefoxurl": "firefox", "operastable": "opera"}
+ARCHIVO_NAVEGADOR = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), "KusiVox", "navegador.txt")
+
+
+def ruta_navegador(nombre: str):
+    """Ruta del .exe del navegador si esta instalado; si no, None."""
+    if not ES_WINDOWS or nombre not in NAVEGADORES:
         return None
     for variable in ("ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA"):
         base = os.environ.get(variable)
-        if base:
-            ruta = os.path.join(base, "Google", "Chrome", "Application", "chrome.exe")
-            if os.path.isfile(ruta):
-                return ruta
+        for relativa in NAVEGADORES[nombre]:
+            if base and os.path.isfile(os.path.join(base, relativa)):
+                return os.path.join(base, relativa)
     return None
 
 
-def abrir_en_navegador(url: str) -> None:
-    """Abre la URL en Google Chrome; si no esta instalado, en el navegador predeterminado."""
-    chrome = ruta_chrome()
-    if chrome:
-        subprocess.Popen([chrome, url], creationflags=SIN_VENTANA)
-    else:
-        webbrowser.open(url)
+def ruta_chrome():
+    """Ruta de chrome.exe si Google Chrome esta instalado; si no, None."""
+    return ruta_navegador("chrome")
+
+
+def navegador_predeterminado():
+    """Navegador que Windows usa para abrir enlaces (Brave, Chrome, Edge, Firefox u Opera)."""
+    if not ES_WINDOWS:
+        return None
+    try:
+        import winreg
+        clave = r"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice"
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, clave) as k:
+            progid = winreg.QueryValueEx(k, "ProgId")[0].lower()
+    except OSError:
+        return None
+    return next((n for p, n in PROGID_NAVEGADOR.items() if progid.startswith(p)), None)
+
+
+def nombre_navegador(texto: str):
+    """'Brave', 'google chrome', 'el predeterminado' -> 'brave', 'chrome', ''. None si no es un navegador."""
+    clave = re.sub(r"^(?:el|la|en|con)\s+|\s+(?:browser|navegador)$", "", normalizar(texto))
+    return NOMBRES_NAVEGADOR.get(clave)
+
+
+def navegador_elegido():
+    """El navegador que la persona eligio por voz ('usa Brave'), si sigue instalado."""
+    try:
+        with open(ARCHIVO_NAVEGADOR, encoding="utf-8") as f:
+            nombre = f.read().strip()
+    except OSError:
+        return None
+    return nombre if nombre in NAVEGADORES else None
+
+
+def elegir_navegador(texto: str, ruta=None) -> dict:
+    """Guarda el navegador con el que KusiVox abrira las paginas: 'Brave', 'Chrome', 'Edge'..."""
+    ruta = ruta or ruta_navegador
+    nombre = nombre_navegador(texto)
+    if nombre is None:
+        return {"exito": False, "mensaje": "Puedo usar Brave, Chrome, Edge, Firefox u Opera."}
+    if nombre and not ruta(nombre):
+        return {"exito": False, "mensaje": f"No encontre {nombre} instalado en esta computadora."}
+    os.makedirs(os.path.dirname(ARCHIVO_NAVEGADOR), exist_ok=True)
+    with open(ARCHIVO_NAVEGADOR, "w", encoding="utf-8") as f:
+        f.write(nombre)
+    elegido = nombre.capitalize() if nombre else "el navegador predeterminado de Windows"
+    log.info("Navegador elegido: %s", elegido)
+    return {"exito": True, "navegador": nombre or "predeterminado",
+            "decir": f"Listo, desde ahora abro las paginas en {elegido}."}
+
+
+def abrir_en_navegador(url: str, navegador: str = "") -> None:
+    """Abre la URL en el navegador pedido, el elegido por voz, el predeterminado de Windows o Chrome."""
+    pedido = nombre_navegador(navegador) if navegador else None
+    for candidato in (pedido, navegador_elegido(), navegador_predeterminado(), "chrome", "edge"):
+        ruta = ruta_navegador(candidato) if candidato else None
+        if ruta:
+            subprocess.Popen([ruta, url], creationflags=SIN_VENTANA)
+            return
+    webbrowser.open(url)
 
 
 def url_para(direccion: str) -> str:
@@ -381,8 +455,8 @@ def url_para(direccion: str) -> str:
     return "https://www.google.com/search?q=" + urllib.parse.quote_plus(texto)
 
 
-def abrir_pagina_web(direccion: str, abrir=None) -> dict:
-    abrir = abrir or abrir_en_navegador
+def abrir_pagina_web(direccion: str, abrir=None, navegador: str = "") -> dict:
+    abrir = abrir or (lambda url: abrir_en_navegador(url, navegador))
     if not (direccion or "").strip():
         return {"exito": False, "mensaje": "No se indico que pagina abrir."}
     url = url_para(direccion)

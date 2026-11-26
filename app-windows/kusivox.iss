@@ -1,6 +1,6 @@
 ; Instalador de KusiVox para Windows (Inno Setup 6)
 #define MyAppName "KusiVox"
-#define MyAppVersion "1.2.0"
+#define MyAppVersion "1.3.0"
 
 [Setup]
 AppId={{B6E2C1A4-6F1B-4C1E-9F3A-2D5E8A7C4B10}
@@ -27,6 +27,7 @@ CloseApplications=yes
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 
 [Tasks]
+Name: "iniciarconwindows"; Description: "Iniciar KusiVox con Windows y mantenerlo siempre conectado (recomendado)"; GroupDescription: "Conexión:"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
@@ -39,6 +40,8 @@ Name: "{group}\Desinstalar KusiVox"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\KusiVox"; Filename: "{app}\KusiVox.exe"; Tasks: desktopicon
 
 [Registry]
+; Inicio con Windows (marcado por defecto) para que KusiVox quede conectado siempre
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "KusiVox"; ValueData: """{app}\KusiVox.exe"" --minimizado"; Tasks: iniciarconwindows; Flags: uninsdeletevalue
 ; Al desinstalar, quita el inicio con Windows si estaba activado
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "KusiVox"; Flags: uninsdeletevalue
 

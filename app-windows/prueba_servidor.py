@@ -1,10 +1,11 @@
-"""Prueba de compilacion: arranca KusiVoxServidor.exe y comprueba que anuncia las 20 herramientas por MCP."""
+"""Prueba de compilacion: arranca KusiVoxServidor.exe y comprueba que anuncia sus 24 herramientas por MCP
+y que, ya compilado, puede leer la pantalla y entender una orden libre (sin ejecutar nada peligroso)."""
 
 import json
 import subprocess
 import sys
 
-ESPERADAS = 20
+ESPERADAS = 24
 
 
 def main(comando: list) -> int:
@@ -34,6 +35,19 @@ def main(comando: list) -> int:
         herramientas = [h["name"] for h in recibir(2)["result"]["tools"]]
         print(len(herramientas), "herramientas:", ", ".join(herramientas))
         assert len(herramientas) == ESPERADAS, f"se esperaban {ESPERADAS}"
+        if sys.platform == "win32":
+            # leer_pantalla usa UI Automation (comtypes): confirma que viaja dentro del .exe.
+            enviar({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+                    "params": {"name": "leer_pantalla", "arguments": {}}})
+            texto = recibir(3)["result"]["content"][0]["text"]
+            print("leer_pantalla:", texto[:300])
+            assert "no deja leer" not in texto, "UI Automation no funciona dentro del ejecutable"
+        # Una orden de apagar por la orden libre debe pedir confirmacion y no apagar nada.
+        enviar({"jsonrpc": "2.0", "id": 4, "method": "tools/call",
+                "params": {"name": "ejecutar_orden", "arguments": {"frase": "apaga la computadora"}}})
+        texto = recibir(4)["result"]["content"][0]["text"]
+        print("ejecutar_orden(apaga):", texto[:200])
+        assert "requiere_confirmacion" in texto, "apagar debe pedir confirmacion"
         print("prueba del servidor: OK")
         return 0
     finally:

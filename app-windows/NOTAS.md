@@ -1,8 +1,18 @@
-## KusiVox 1.2.0
+## KusiVox 1.3.0
 
 Asistente de escritorio por voz KusiVox: app de Windows y firmware del dispositivo.
 
-Novedades de la 1.2.0: KusiVox entiende muchas más formas de pedir lo mismo. Por ejemplo «más fuerte», «bájale», «está muy alto», «pasa a la otra», «la calcu», «block de notas», «wasap», «a dormir» o «pon las letras grandes». También abre las herramientas de accesibilidad de Windows: lupa, narrador, teclado en pantalla, texto grande y alto contraste.
+Novedades de la 1.3.0:
+
+- **Lenguaje libre:** entiende la orden completa tal como la dices, aunque sea una sola palabra («Word», «YouTube») u órdenes compuestas («abre Word y escribe hola»).
+- **YouTube en la misma pestaña:** si pides otra canción, cambia el video sin abrir otra ventana.
+- **Todo lo que se hace con el mouse:** clic por nombre («haz clic en Guardar»), doble clic, clic derecho, mover el puntero y desplazar.
+- **Atajos por nombre:** «guárdalo», «copia», «selecciona todo», «negrita», «nueva pestaña», «atrás».
+- **Lectura de pantalla:** dice qué ventana está al frente, el texto donde está el cursor y qué botones hay.
+- **Brave y otros navegadores:** usa el navegador predeterminado de Windows o el que elijas por voz («usa Brave como navegador», «abre YouTube en Brave»).
+- **Siempre conectado:** el instalador lo deja iniciando con Windows, la X lo minimiza en vez de cerrarlo, se reconecta en pocos segundos y evita que la PC se suspenda.
+- **Ventana nueva:** KusiVox animado según el estado de la conexión y ejemplos de órdenes.
+- **Más rápido:** menos esperas al abrir programas y el menú Inicio se lee al arrancar.
 
 **Descargas**
 
